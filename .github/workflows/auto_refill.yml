@@ -25,7 +25,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install google-genai python-dotenv toml pydantic
+          pip install -r requirements.txt
 
       - name: Run auto_refill script
         env:
