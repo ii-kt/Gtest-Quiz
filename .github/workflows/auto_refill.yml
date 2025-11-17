@@ -30,6 +30,8 @@ jobs:
       - name: Run auto_refill script
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          # リポジトリ直下を import パスに追加して gtest_quiz を読めるようにする
+          PYTHONPATH: ${{ github.workspace }}
         run: |
           python tools/auto_refill.py
 
