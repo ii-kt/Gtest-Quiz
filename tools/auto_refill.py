@@ -1,146 +1,185 @@
 """
 tools/auto_refill.py
-===========================
+======================
 
-GitHub Actions (.github/workflows/auto_refill.yml) から起動され、
-bank/question_bank.jsonl に自動的に問題を追加するスクリプト。
+GitHub Actions から毎日実行され、問題バンク (bank/question_bank.jsonl)
+に Gemini で生成した新しい問題を追加するスクリプト。
 
-主な役割:
-- bank/meta.json を読み込む (MetaManager)
-- question_bank.jsonl を読み込む (QuestionBank)
-- 出題の少ない章を優先して、Google Gemini に問題生成を依頼
-- 生成された問題を JSONL 形式で追記
-- meta.json の usage / chapter_stats / quota_estimate を更新
-
-前提:
-- 環境変数 GEMINI_API_KEY に Google Gemini API キーが設定されている
-- pip で `google-generativeai` がインストールされていること
+特徴:
+- GEMINI_API_KEY がなければ何もせず正常終了（ワークフローを落とさない）
+- MetaManager / meta.json を用いて、出題が少ない中項目から優先的に追加
+- 1 行 1 問の JSONL 形式で追記
 """
 
 from __future__ import annotations
 
-import argparse
 import json
 import os
 from datetime import datetime, timezone
-from pathlib import Path
-from typing import Any, Dict, List, Optional
-
-import google.generativeai as genai
+from typing import Any, Dict, List, Tuple, Optional
 
 from gtest_quiz.meta import MetaManager
+from gtest_quiz.question_bank import get_all_questions
 from gtest_quiz.models import Question
-from gtest_quiz.question_bank import (
-    load_question_bank,
-    get_all_questions,
-)
-from gtest_quiz.syllabus import TECH_DOMAIN_LABEL, LAW_DOMAIN_LABEL  # 仮: 必要なら調整
-from gtest_quiz.quota import QuotaManager
+
+# toml は config.toml が無い場合も考慮して optional
+try:
+    import toml  # type: ignore[import]
+    HAS_TOML = True
+except Exception:
+    toml = None  # type: ignore[assignment]
+    HAS_TOML = False
+
+# Gemini SDK も optional
+try:
+    import google.generativeai as genai  # type: ignore[import]
+    HAS_GEMINI = True
+except Exception:
+    genai = None  # type: ignore[assignment]
+    HAS_GEMINI = False
 
 
-BANK_PATH = Path("bank/question_bank.jsonl")
+# 1 回の実行で何問追加するか
+N_NEW_QUESTIONS_PER_RUN = 3
 
 
-# -------------------------------------------------------------
-#  Gemini 初期化
-# -------------------------------------------------------------
-def init_gemini() -> None:
+# ----------------------------------------------------------------------
+# 設定読み込み
+# ----------------------------------------------------------------------
+def load_app_config() -> Dict[str, Any]:
+    path = "config.toml"
+    if not HAS_TOML or not os.path.exists(path):
+        return {}
+    try:
+        return toml.load(path)  # type: ignore[arg-type]
+    except Exception:
+        return {}
+
+
+def get_paths(config: Dict[str, Any]) -> Tuple[str, str]:
+    paths = config.get("paths", {}) if isinstance(config.get("paths"), dict) else {}
+    meta_path = paths.get("meta", "bank/meta.json")
+    bank_path = paths.get("question_bank", "bank/question_bank.jsonl")
+    return meta_path, bank_path
+
+
+# ----------------------------------------------------------------------
+# Gemini 初期化 & モデル選択
+# ----------------------------------------------------------------------
+def init_gemini() -> bool:
+    if not HAS_GEMINI:
+        print("[auto_refill] google-generativeai がインストールされていないためスキップします。")
+        return False
+
     api_key = os.getenv("GEMINI_API_KEY")
     if not api_key:
-        raise RuntimeError("環境変数 GEMINI_API_KEY が設定されていません。")
-    genai.configure(api_key=api_key)
+        print("[auto_refill] GEMINI_API_KEY が設定されていないためスキップします。")
+        return False
+
+    try:
+        genai.configure(api_key=api_key)  # type: ignore[call-arg]
+    except Exception as e:
+        print(f"[auto_refill] Gemini の初期化に失敗しました: {e}")
+        return False
+
+    return True
 
 
-def list_available_models() -> List[str]:
-    """
-    利用可能なテキスト生成モデルの一覧を取得する。
-    より新しいモデルを優先するため、名前でソートして返す。
-    """
-    models = genai.list_models()
+def list_gemini_models() -> List[str]:
+    if not HAS_GEMINI:
+        return []
+    try:
+        models = genai.list_models()  # type: ignore[call-arg]
+    except Exception as e:
+        print(f"[auto_refill] モデル一覧の取得に失敗しました: {e}")
+        return []
+
     names: List[str] = []
     for m in models:
-        # text / chat が可能なものに絞る
-        if "generateContent" in getattr(m, "supported_generation_methods", []):
+        methods = getattr(m, "supported_generation_methods", [])
+        if "generateContent" in methods:
             names.append(m.name)
-    # 新しい model 名ほど後半に来ることが多いので逆順ソート
-    names = sorted(names, reverse=True)
-    return names
+    return sorted(names, reverse=True)
 
 
-def choose_model_with_fallback(preferred_model: Optional[str] = None) -> str:
-    """
-    利用可能なモデルの中から、優先度付きで 1 つ選ぶ。
+def choose_model(config: Dict[str, Any]) -> Optional[str]:
+    if not HAS_GEMINI:
+        return None
 
-    - preferred_model が指定されていて利用可能ならそれ
-    - そうでなければ、一覧の先頭 (最も新しいとみなすもの)
-    """
-    available = list_available_models()
+    available = list_gemini_models()
     if not available:
-        raise RuntimeError("利用可能な Gemini モデルが見つかりません。")
+        return None
 
-    if preferred_model and preferred_model in available:
-        return preferred_model
+    gem_cfg = config.get("gemini")
+    if isinstance(gem_cfg, dict):
+        preferred = gem_cfg.get("preferred_model")
+        if isinstance(preferred, str) and preferred and preferred in available:
+            return preferred
+
+    # fallback: 一番新しそうなもの
     return available[0]
 
 
-# -------------------------------------------------------------
-#  章ラベルから domain / chapter_group を推定
-# -------------------------------------------------------------
-def infer_domain_and_group(meta: Dict[str, Any], chapter_label: str) -> Dict[str, str]:
+# ----------------------------------------------------------------------
+#  シラバス情報の取り扱い
+# ----------------------------------------------------------------------
+def collect_subchapters(meta: MetaManager) -> List[Tuple[str, str]]:
     """
-    meta["chapters"] から、chapter_label に対応する大分類ラベルを探し、
-    domain (技術分野 / 法律・倫理分野) と chapter_group (大分類ラベル) を返す。
+    meta.json の chapters から (chapter_group_label, subchapter_label) のリストを作る。
 
-    domain は、章キーのプレフィックス 01〜08 を 技術分野、
-    09〜10 を 法律・倫理分野 として扱う。
+    戻り値例:
+        [("人工知能とは", "1. 人工知能の定義"),
+         ("人工知能とは", "2. 人工知能分野で議論される問題"),
+         ...]
     """
-    chapters = meta.get("chapters", {})
-    for group_key, group_val in chapters.items():
+    result: List[Tuple[str, str]] = []
+    chapters = meta.meta.get("chapters", {})
+    if not isinstance(chapters, dict):
+        return result
+
+    for _group_key, group_val in chapters.items():
+        if not isinstance(group_val, dict):
+            continue
+        group_label = group_val.get("label")
         sub = group_val.get("subchapters", {})
+        if not isinstance(group_label, str) or not isinstance(sub, dict):
+            continue
         for _sub_key, sub_val in sub.items():
-            if sub_val.get("label") == chapter_label:
-                group_label = group_val.get("label", "")
-                # group_key から domain を推定
-                if str(group_key).startswith(("09_", "10_")):
-                    domain = LAW_DOMAIN_LABEL
-                else:
-                    domain = TECH_DOMAIN_LABEL
-                return {"domain": domain, "chapter_group": group_label}
-
-    # 見つからない場合のフォールバック
-    return {"domain": TECH_DOMAIN_LABEL, "chapter_group": "不明な章"}
+            if not isinstance(sub_val, dict):
+                continue
+            sub_label = sub_val.get("label")
+            if isinstance(sub_label, str):
+                result.append((group_label, sub_label))
+    return result
 
 
-# -------------------------------------------------------------
-#  question_id の生成
-# -------------------------------------------------------------
-def generate_question_id(chapter_label: str, existing_ids: List[str]) -> str:
+def score_subchapters_by_usage(meta: MetaManager) -> List[Tuple[str, str]]:
     """
-    question_bank.jsonl 内の既存 ID を踏まえつつ、
-    衝突しないシンプルな ID を生成する。
-
-    形式:
-        Q_AUTO_<yyyymmddHHMMss>_<seq>
+    「これまでの出題回数が少ない中項目ほど優先される」ように
+    (group_label, sub_label) をスコア付きで並べる。
     """
-    ts = datetime.now(timezone.utc).strftime("%Y%m%d%H%M%S")
-    base = f"Q_AUTO_{ts}"
-    seq = 1
-    id_set = set(existing_ids)
-    while True:
-        qid = f"{base}_{seq:02d}"
-        if qid not in id_set:
-            return qid
-        seq += 1
+    pairs = collect_subchapters(meta)
+    stats = meta.meta.get("chapter_stats", {})
+    if not isinstance(stats, dict):
+        stats = {}
+
+    scored: List[Tuple[str, str, int]] = []
+    for group_label, sub_label in pairs:
+        stat = stats.get(sub_label, {})
+        total = 0
+        if isinstance(stat, dict):
+            total = int(stat.get("total_questions", 0))
+        scored.append((group_label, sub_label, total))
+
+    # 出題回数が少ない順にソート
+    scored.sort(key=lambda x: x[2])
+    return [(g, s) for g, s, _ in scored]
 
 
-# -------------------------------------------------------------
-#  Gemini へ与えるプロンプト
-# -------------------------------------------------------------
-def build_prompt(chapter_label: str, chapter_group: str) -> str:
-    """
-    指定したシラバス中項目 (chapter_label) に対応する
-    G検定レベルの四択問題を 1問生成するためのプロンプト。
-    """
+# ----------------------------------------------------------------------
+#  Gemini 用プロンプト
+# ----------------------------------------------------------------------
+def build_prompt(chapter_group: str, chapter_label: str) -> str:
     return f"""
 あなたは日本語で G検定(JDLA Deep Learning for GENERAL) の高品質な四択問題を作る専門家です。
 
@@ -154,16 +193,16 @@ def build_prompt(chapter_label: str, chapter_group: str) -> str:
 - G検定本試験レベルの知識を問う。
 - 純粋な知識問題・概念理解問題・応用イメージ問題をバランス良く含める。
 - 選択肢は必ず 4 つ。紛らわしいが、1つだけ明確に正しい選択肢を含める。
-- 難易度は basic / standard / advanced のいずれかを、内容に応じて自分で決める。
+- 難易度は basic / standard / advanced のいずれか。
 
 # 出力フォーマット (JSON 1オブジェクトのみ)
 以下のキーを含む JSON オブジェクトとして出力してください:
 
 {{
-  "question": "問題文（文末に「どれか。」などを含めてもよい）",
+  "question": "問題文",
   "choices": ["選択肢1", "選択肢2", "選択肢3", "選択肢4"],
   "correct_index": 0,
-  "explanation": "なぜこれが正しく、他が誤りかを丁寧に解説する。",
+  "explanation": "正解の理由と他の選択肢が誤りである理由を丁寧に解説する。",
   "difficulty": "basic|standard|advanced"
 }}
 
@@ -171,63 +210,47 @@ def build_prompt(chapter_label: str, chapter_group: str) -> str:
 """
 
 
-# -------------------------------------------------------------
-#  1問生成 → Question への変換
-# -------------------------------------------------------------
 def generate_one_question(
     model_name: str,
-    chapter_label: str,
+    meta: MetaManager,
     chapter_group: str,
-    meta_dict: Dict[str, Any],
-    quota: QuotaManager,
+    chapter_label: str,
 ) -> Optional[Question]:
-    """
-    指定した章について問題を 1 問生成し、Question オブジェクトとして返す。
-    失敗した場合は None。
-    """
-    prompt = build_prompt(chapter_label, chapter_group)
+    """指定された中項目について Gemini で 1 問生成し、Question として返す。"""
 
-    # 概算トークン数 (非常に大雑把で良い)
+    if not HAS_GEMINI:
+        return None
+
+    prompt = build_prompt(chapter_group, chapter_label)
+    quota = meta.get_quota_manager()
+
     approx_prompt_tokens = len(prompt) // 2
 
     try:
-        model = genai.GenerativeModel(model_name)
-        response = model.generate_content(prompt)
+        model = genai.GenerativeModel(model_name)  # type: ignore[call-arg]
+        response = model.generate_content(prompt)  # type: ignore[call-arg]
         text = response.text.strip() if hasattr(response, "text") else ""
-
-        # 出力が JSON である前提
         data = json.loads(text)
     except Exception as e:
-        # 429 らしき場合のみクォータ推定を更新
         msg = str(e)
+        print(f"[auto_refill] 問題生成に失敗しました: {msg}")
         if "429" in msg or "Resource exhausted" in msg:
             quota.register_429(message=msg)
         else:
             quota.register_error(message=msg)
         return None
 
-    # 概算で usage に加算
     approx_output_tokens = len(text) // 2
     quota.add_usage(approx_prompt_tokens + approx_output_tokens)
 
-    # meta から domain / chapter_group を決定
-    info = infer_domain_and_group(meta_dict, chapter_label)
-    domain = info["domain"]
-    chapter_group_resolved = info["chapter_group"]
-
-    # ID を生成
-    existing_ids = list(load_question_bank().keys())
-    qid = generate_question_id(chapter_label, existing_ids)
-
     created_at = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
-    # JSON から Question へマッピング
     jq: Dict[str, Any] = {
-        "id": qid,
+        "id": f"Q_AUTO_{created_at}",
         "source": "auto_refill",
         "created_at": created_at,
-        "domain": domain,
-        "chapter_group": chapter_group_resolved,
+        "domain": "技術分野",
+        "chapter_group": chapter_group,
         "chapter_id": chapter_label,
         "difficulty": data.get("difficulty", "standard"),
         "question": data.get("question", "").strip(),
@@ -243,115 +266,76 @@ def generate_one_question(
         or not isinstance(jq["choices"], list)
         or len(jq["choices"]) != 4
     ):
+        print("[auto_refill] 生成結果が不正なため破棄しました。")
         return None
 
     return Question.from_dict(jq)
 
 
-# -------------------------------------------------------------
+# ----------------------------------------------------------------------
+#  JSONL 追記
+# ----------------------------------------------------------------------
+def append_questions_to_bank(bank_path: str, questions: List[Question]) -> None:
+    if not questions:
+        return
+    os.makedirs(os.path.dirname(bank_path), exist_ok=True)
+    with open(bank_path, "a", encoding="utf-8") as f:
+        for q in questions:
+            f.write(json.dumps(q.to_dict(), ensure_ascii=False))
+            f.write("\n")
+
+
+# ----------------------------------------------------------------------
 #  メイン処理
-# -------------------------------------------------------------
-def refill_questions(
-    count: int,
-    preferred_model: Optional[str] = None,
-    dry_run: bool = False,
-) -> None:
-    """
-    問題を count 問生成してバンクに追加する。
+# ----------------------------------------------------------------------
+def main() -> None:
+    config = load_app_config()
+    meta_path, bank_path = get_paths(config)
 
-    - 偏りを減らすため、MetaManager.choose_next_chapter を用いて
-      出題回数の少ない章から優先的に出題
-    - dry_run=True の場合、生成内容を標準出力に表示するだけで
-      question_bank.jsonl には書き込まない
-    """
-    # 初期化
-    mm = MetaManager()
-    mm.load()
-    quota = mm.get_quota_manager()
+    meta = MetaManager(meta_path)
+    meta.load()
 
-    all_questions = get_all_questions()
-    available_chapters = sorted({q.chapter_id for q in all_questions})
+    if not init_gemini():
+        # オフライン・キー未設定などの場合、エラーにはせず静かに終了
+        print("[auto_refill] Gemini が利用できないため、今回は問題追加を行いません。")
+        return
 
-    if not available_chapters:
-        raise RuntimeError("question_bank.jsonl に既存の問題が存在しません。")
+    model_name = choose_model(config)
+    if not model_name:
+        print("[auto_refill] 利用可能な Gemini モデルが見つからないため終了します。")
+        return
 
-    model_name = choose_model_with_fallback(preferred_model)
+    # 出題が少ない順に中項目を並べる
+    ranked_subchapters = score_subchapters_by_usage(meta)
+    if not ranked_subchapters:
+        print("[auto_refill] meta.json に章情報が無いため終了します。")
+        return
 
-    new_questions: List[Question] = []
+    # すでにある問題を参照して、偏りをさらに軽減してもよいが、
+    # ここでは simple に上位 N 件だけを対象とする。
+    targets = ranked_subchapters[: N_NEW_QUESTIONS_PER_RUN * 2]
 
-    for _ in range(count):
-        chapter_id = mm.choose_next_chapter(available_chapter_ids=available_chapters)
-        if chapter_id is None:
+    generated: List[Question] = []
+
+    for (group_label, sub_label) in targets:
+        if len(generated) >= N_NEW_QUESTIONS_PER_RUN:
             break
-
-        info = infer_domain_and_group(mm.meta, chapter_id)
-        chapter_group = info["chapter_group"]
-
-        q = generate_one_question(
-            model_name=model_name,
-            chapter_label=chapter_id,
-            chapter_group=chapter_group,
-            meta_dict=mm.meta,
-            quota=quota,
-        )
+        q = generate_one_question(model_name, meta, group_label, sub_label)
         if q is None:
             continue
+        generated.append(q)
+        # 利用統計に反映
+        meta.record_usage(chapter_id=sub_label, source="online")
 
-        new_questions.append(q)
-        # usage 更新（オンライン問題としてカウント）
-        mm.record_usage(chapter_id=q.chapter_id, source="online")
+    if not generated:
+        print("[auto_refill] 有効な問題を生成できませんでした。")
+        meta.save()
+        return
 
-    # 追記 or dry-run
-    if not new_questions:
-        print("新規問題は生成されませんでした。")
-    elif dry_run:
-        print(f"[DRY RUN] {len(new_questions)}問生成:")
-        for q in new_questions:
-            print(json.dumps(q.to_dict(), ensure_ascii=False))
-    else:
-        BANK_PATH.parent.mkdir(parents=True, exist_ok=True)
-        with BANK_PATH.open("a", encoding="utf-8") as f:
-            for q in new_questions:
-                f.write(json.dumps(q.to_dict(), ensure_ascii=False))
-                f.write("\n")
-        print(f"{len(new_questions)}問を {BANK_PATH} に追記しました。")
+    append_questions_to_bank(bank_path, generated)
+    meta.save()
 
-    # meta 保存
-    mm.save()
-
-
-# -------------------------------------------------------------
-#  CLI エントリーポイント
-# -------------------------------------------------------------
-def main() -> None:
-    parser = argparse.ArgumentParser(
-        description="G検定クイズ用 question_bank 自動補充スクリプト",
-    )
-    parser.add_argument(
-        "--count",
-        type=int,
-        default=5,
-        help="生成する問題数（デフォルト: 5）",
-    )
-    parser.add_argument(
-        "--model",
-        type=str,
-        default=None,
-        help="優先的に使いたい Gemini モデル名（任意）",
-    )
-    parser.add_argument(
-        "--dry-run",
-        action="store_true",
-        help="問題バンクには書き込まず、生成結果のみ標準出力に表示する",
-    )
-    args = parser.parse_args()
-
-    init_gemini()
-    refill_questions(
-        count=args.count,
-        preferred_model=args.model,
-        dry_run=args.dry_run,
-    )
+    print(f"[auto_refill] 新規問題を {len(generated)} 問追加しました。")
 
 
 if __name__ == "__main__":
