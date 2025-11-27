@@ -130,10 +130,8 @@ def get_page() -> str:
 @st.cache_resource(show_spinner=False)
 def load_all_questions_cached() -> List[Question]:
     """question_bank.jsonl を読み込んで Question のリストをキャッシュして返す。"""
-    cfg = load_app_config()
-    bank_dir = cfg.get("paths", {}).get("bank_dir", "bank")
-    jsonl_path = os.path.join(bank_dir, "question_bank.jsonl")
-    return get_all_questions(jsonl_path)
+    # question_bank.get_all_questions は引数なしで呼び出す想定のため、余計な引数を渡さない
+    return get_all_questions()
 
 
 def load_new_question(session: SessionState, meta: MetaManager) -> None:
