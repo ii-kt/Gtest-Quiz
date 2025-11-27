@@ -18,46 +18,40 @@ Streamlit ベースの UI コンポーネントをまとめたモジュール。
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from typing import Any, Dict, Optional
 
 import streamlit as st
 
-from .models import SessionState, Question
+from .models import Question, SessionState
+
 
 # ----------------------------------------------------------------------
-#  テーマ定義（iPhone Safari 向け）
+#  テーマ定義
 # ----------------------------------------------------------------------
-
-
 THEMES: Dict[str, Dict[str, str]] = {
     "light": {
-        "bg": "#ffffff",
-        "text": "#1c1c1e",
-        "surface": "#f2f2f7",
-        "surface_alt": "#ffffff",
-        "border": "#d1d1d6",
-        "primary": "#007aff",  # iOS ブルー
-        "correct": "#34c759",
-        "incorrect": "#ff3b30",
+        "bg": "#f5f5f7",
+        "surface": "#ffffff",
+        "surface_alt": "#f0f0f4",
+        "primary": "#2563eb",
+        "primary_soft": "#dbeafe",
+        "border": "#d0d0dd",
+        "text": "#111827",
+        "muted": "#6b7280",
+        "correct": "#16a34a",
+        "incorrect": "#dc2626",
     },
     "dark": {
-        "bg": "#000000",
-        "text": "#f5f5f7",
-        "surface": "#1c1c1e",
-        "surface_alt": "#2c2c2e",
-        "border": "#3a3a3c",
-        "primary": "#0a84ff",
-        "correct": "#30d158",
-        "incorrect": "#ff453a",
-    },
-    "blue": {
-        "bg": "#f5f9ff",
-        "text": "#0a1a2f",
-        "surface": "#e8f0ff",
-        "surface_alt": "#ffffff",
-        "border": "#c9d6e8",
-        "primary": "#0066cc",
-        "correct": "#1f9d55",
+        "bg": "#0b1120",
+        "surface": "#020617",
+        "surface_alt": "#111827",
+        "primary": "#3b82f6",
+        "primary_soft": "#1d4ed8",
+        "border": "#1f2937",
+        "text": "#e5e7eb",
+        "muted": "#9ca3af",
+        "correct": "#22c55e",
         "incorrect": "#d64545",
     },
 }
@@ -86,21 +80,19 @@ def _generate_css(theme: Dict[str, str]) -> str:
     .gq-container {{
         max-width: 700px;
         margin: 0 auto;
-        padding: 1rem;
+        padding: 0.5rem 0.75rem 2.5rem 0.75rem;
     }}
 
     .gq-header {{
         display: flex;
         flex-direction: column;
-        gap: 0.4rem;
-        margin-bottom: 0.5rem;
+        gap: 0.25rem;
     }}
 
     .gq-title-row {{
         display: flex;
-        justify-content: space-between;
         align-items: center;
-        gap: 0.5rem;
+        justify-content: space-between;
     }}
 
     .gq-app-title {{
@@ -141,43 +133,46 @@ def _generate_css(theme: Dict[str, str]) -> str:
 
     .gq-quota-label {{
         white-space: nowrap;
+        color: {theme['muted']};
     }}
 
     .gq-quota-bar {{
+        position: relative;
         flex: 1;
-        height: 8px;
-        background: {theme['border']}55;
-        border-radius: 4px;
+        height: 6px;
+        border-radius: 999px;
         overflow: hidden;
+        background: {theme['surface_alt']};
     }}
 
     .gq-quota-fill {{
-        height: 8px;
+        position: absolute;
+        left: 0;
+        top: 0;
+        bottom: 0;
         background: {theme['primary']};
-        width: 0%;
-        border-radius: 4px;
-        transition: width 0.3s ease-out;
+        transition: width 0.2s ease-out;
     }}
 
     .gq-question-box {{
-        background: {theme['surface_alt']};
-        padding: 1rem;
+        margin-top: 0.8rem;
+        padding: 0.9rem;
         border-radius: 12px;
+        background: {theme['surface']};
         border: 1px solid {theme['border']};
-        font-size: 1.1rem;
+        font-size: 1rem;
         line-height: 1.6;
-        margin-top: 0.5rem;
-        margin-bottom: 0.75rem;
     }}
 
     .gq-choice-btn {{
         width: 100%;
-        padding: 0.9rem 0.9rem;
-        font-size: 1rem;
-        border-radius: 10px;
-        margin-bottom: 0.45rem;
+        margin-top: 0.6rem;
+        padding: 0.75rem 0.85rem;
+        border-radius: 12px;
         border: 1px solid {theme['border']};
-        background: {theme['surface_alt']};
+        background: {theme['surface']};
+        color: {theme['text']};
+        font-size: 0.95rem;
         text-align: left;
         transition: background 0.15s ease-out, border-color 0.15s ease-out;
     }}
@@ -208,41 +203,22 @@ def _generate_css(theme: Dict[str, str]) -> str:
     .gq-footer {{
         margin-top: 0.75rem;
         display: flex;
-        justify-content: space-between;
-        align-items: center;
-        font-size: 0.8rem;
-        color: {theme['text']}aa;
-    }}
-
-    .gq-nav-row {{
-        margin-top: 0.5rem;
-        display: flex;
-        gap: 0.5rem;
-    }}
-
-    .gq-nav-btn {{
-        flex: 1;
-        padding: 0.75rem;
-        font-size: 0.95rem;
-        border-radius: 10px;
-        border: 1px solid {theme['primary']};
-        background: {theme['primary']}11;
-        color: {theme['primary']};
-    }}
-
-    .gq-nav-btn:active {{
-        background: {theme['primary']}22;
+        flex-direction: column;
+        gap: 0.15rem;
+        font-size: 0.75rem;
+        color: {theme['muted']};
+        text-align: center;
     }}
 
     .gq-safe-bottom {{
-        height: 80px; /* iPhone Safari 下部 UI に埋もれないための余白 */
+        height: 2.5rem;
     }}
     </style>
     """
 
 
 # ----------------------------------------------------------------------
-#  テーマ関連
+#  テーマ選択 / CSS 適用
 # ----------------------------------------------------------------------
 def _ensure_theme() -> str:
     """セッションに theme キーを用意し、現在のテーマキーを返す。"""
@@ -258,14 +234,12 @@ def _ensure_theme() -> str:
 def _render_theme_selector(theme_key: str) -> str:
     """ヘッダーの右上あたりにテーマ切替を表示し、選択されたテーマキーを返す。"""
     # Streamlit の radio を横並びで使用
-    options = ["light", "dark", "blue"]
-    labels = {"light": "Light", "dark": "Dark", "blue": "Blue"}
+    labels = {"light": "ライト", "dark": "ダーク"}
 
-    idx = options.index(theme_key) if theme_key in options else 0
     selected = st.radio(
         "テーマ",
-        options,
-        index=idx,
+        options=list(labels.keys()),
+        index=list(labels.keys()).index(theme_key),
         horizontal=True,
         label_visibility="collapsed",
         format_func=lambda k: labels.get(k, k),
@@ -319,10 +293,11 @@ def render_quiz_page(
             "theme": _ensure_theme(),
         }
 
-    # テーマ決定と CSS 注入
+    # テーマを決定し、CSS を適用
     theme_key = _ensure_theme()
     theme = THEMES[theme_key]
-    st.markdown(_generate_css(theme), unsafe_allow_html=True)
+    css = _generate_css(theme)
+    st.markdown(css, unsafe_allow_html=True)
 
     # 操作結果の初期値
     selected_choice: Optional[int] = None
@@ -422,8 +397,10 @@ def render_quiz_page(
         class_attr = " ".join(classes)
         button_html = f"<button class='{class_attr}'>{choice_text}</button>"
 
+        # Streamlit のボタンはクリック検知専用にして、見た目はカスタム HTML ボタンで表示する。
+        # ラベルを空文字にしておくことで、選択肢が二重に表示される問題を避ける。
         if st.button(
-            choice_text,
+            " ",
             key=f"gq_choice_{idx}",
             use_container_width=True,
         ):
@@ -441,7 +418,7 @@ def render_quiz_page(
     # 解説（回答済みの場合のみ）
     # ----------------------------------------
     if answered_index is not None:
-        with st.expander("解説"):
+        with st.expander("解説", expanded=True):
             st.markdown(
                 f"<div class='gq-explanation-box'>{q.explanation}</div>",
                 unsafe_allow_html=True,
@@ -472,7 +449,8 @@ def render_quiz_page(
         unsafe_allow_html=True,
     )
 
-    st.markdown("<div class='gq-safe-bottom'></div>", unsafe_allow_html=True)
+    # 自動スクロールのターゲットとなるアンカー
+    st.markdown("<div id='gq-answer-bottom' class='gq-safe-bottom'></div>", unsafe_allow_html=True)
     st.markdown("</div>", unsafe_allow_html=True)
 
     return {
@@ -488,9 +466,11 @@ def render_quiz_page(
 #  クォータメーター描画
 # ----------------------------------------------------------------------
 def _render_quota_meter(theme: Dict[str, str], quota_status: Dict[str, Any]) -> None:
-    """推定クォータメーターを描画する。"""
-
-    total = int(quota_status.get("total_used_tokens", 0))
+    """
+    quota_status を元にクォータメーターを描画する。
+    quota_status は MetaManager.get_quota_status() の戻り値想定。
+    """
+    total = quota_status.get("total_used_tokens")
     limit = quota_status.get("estimated_limit_tokens")
     last_429_at = quota_status.get("last_429_at")
 
