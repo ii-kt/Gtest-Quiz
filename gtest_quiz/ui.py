@@ -5,7 +5,7 @@ ui.py
 Streamlit ベースの UI コンポーネントをまとめたモジュール。
 
 責務:
-- iPhone Safari を主ターターゲットとしたレイアウトとスタイル
+- iPhone Safari を主ターゲットとしたレイアウトとスタイル
 - 問題画面の描画（質問・選択肢・解説）
 - ヘッダー（シラバス情報・クォータメーター・テーマ切替）
 - ナビゲーションボタン（前へ / 次へ / 章変更）
@@ -22,51 +22,47 @@ from typing import Any, Dict, Optional, List
 
 import streamlit as st
 
-from .models import Question, SessionState
-
+from .models import SessionState, Question
 
 # ----------------------------------------------------------------------
-#  テーマ定義
+#  テーマ定義（カラフルな 3 テーマ）
 # ----------------------------------------------------------------------
+
 THEMES: Dict[str, Dict[str, str]] = {
     "light": {
-        "bg": "#f5f5f7",
+        "bg": "#fdfbff",
+        "text": "#0f172a",
         "surface": "#ffffff",
-        "surface_alt": "#f0f0f4",
-        "primary": "#2563eb",
-        "primary_soft": "#dbeafe",
-        "border": "#d0d0dd",
-        "text": "#111827",
-        "muted": "#6b7280",
+        "surface_alt": "#f5f3ff",
+        "border": "#e5e7eb",
+        "primary": "#6366f1",        # indigo
+        "primary_soft": "#e0e7ff",
         "correct": "#16a34a",
         "incorrect": "#dc2626",
     },
     "dark": {
-        "bg": "#0b1120",
-        "surface": "#020617",
-        "surface_alt": "#111827",
-        "primary": "#3b82f6",
-        "primary_soft": "#1d4ed8",
-        "border": "#1f2937",
+        "bg": "#020617",
         "text": "#e5e7eb",
-        "muted": "#9ca3af",
+        "surface": "#020617",
+        "surface_alt": "#0f172a",
+        "border": "#1f2937",
+        "primary": "#8b5cf6",        # violet
+        "primary_soft": "#4c1d95",
         "correct": "#22c55e",
-        "incorrect": "#d64545",
+        "incorrect": "#f97373",
     },
     "blue": {
         "bg": "#0f172a",
+        "text": "#e5e7eb",
         "surface": "#020617",
         "surface_alt": "#0b1120",
-        "primary": "#38bdf8",
-        "primary_soft": "#0ea5e9",
         "border": "#1e293b",
-        "text": "#e5e7eb",
-        "muted": "#94a3b8",
+        "primary": "#38bdf8",        # sky
+        "primary_soft": "#0ea5e9",
         "correct": "#22c55e",
         "incorrect": "#f97373",
     },
 }
-
 
 # ----------------------------------------------------------------------
 #  CSS 生成
@@ -79,7 +75,7 @@ def _generate_css(theme: Dict[str, str]) -> str:
     html, body {{
         margin: 0;
         padding: 0;
-        background: {theme['bg']};
+        background: radial-gradient(circle at top, {theme['primary_soft']}22 0, {theme['bg']} 60%);
         color: {theme['text']};
         -webkit-text-size-adjust: 100%;
         touch-action: manipulation;
@@ -89,34 +85,37 @@ def _generate_css(theme: Dict[str, str]) -> str:
     }}
 
     .gq-container {{
-        max-width: 700px;
+        max-width: 720px;
         margin: 0 auto;
-        padding: 0.5rem 0.75rem 2.5rem 0.75rem;
+        padding: 0.75rem 0.9rem 3rem 0.9rem;
     }}
 
     .gq-header {{
         display: flex;
         flex-direction: column;
-        gap: 0.25rem;
+        gap: 0.4rem;
     }}
 
     .gq-title-row {{
         display: flex;
-        align-items: center;
         justify-content: space-between;
+        align-items: center;
+        gap: 0.5rem;
     }}
 
     .gq-app-title {{
-        font-weight: 600;
+        font-weight: 650;
+        letter-spacing: 0.02em;
         font-size: 1.15rem;
     }}
 
     .gq-mode-badge {{
-        padding: 0.1rem 0.5rem;
+        padding: 0.1rem 0.65rem;
         border-radius: 999px;
         border: 1px solid {theme['border']};
         font-size: 0.75rem;
         white-space: nowrap;
+        background: {theme['surface_alt']};
     }}
 
     .gq-chapter-tags {{
@@ -127,7 +126,7 @@ def _generate_css(theme: Dict[str, str]) -> str:
     }}
 
     .gq-tag {{
-        padding: 0.1rem 0.5rem;
+        padding: 0.1rem 0.6rem;
         border-radius: 999px;
         background: {theme['surface']};
         border: 1px solid {theme['border']};
@@ -144,7 +143,7 @@ def _generate_css(theme: Dict[str, str]) -> str:
 
     .gq-quota-label {{
         white-space: nowrap;
-        color: {theme['muted']};
+        color: {theme['text']}99;
     }}
 
     .gq-quota-bar {{
@@ -161,63 +160,84 @@ def _generate_css(theme: Dict[str, str]) -> str:
         left: 0;
         top: 0;
         bottom: 0;
-        background: {theme['primary']};
+        background: linear-gradient(90deg, {theme['primary']} 0%, {theme['primary_soft']} 100%);
         transition: width 0.2s ease-out;
     }}
 
     .gq-question-box {{
-        margin-top: 0.8rem;
-        padding: 0.9rem;
-        border-radius: 12px;
+        margin-top: 1rem;
+        padding: 1rem 1rem;
+        border-radius: 18px;
         background: {theme['surface']};
         border: 1px solid {theme['border']};
         font-size: 1rem;
-        line-height: 1.6;
+        line-height: 1.7;
+        box-shadow: 0 18px 40px rgba(15, 23, 42, 0.08);
     }}
 
-    .gq-choice-btn {{
+    /* 選択肢（未回答時のボタン） */
+    .gq-choice-row {{
+        margin-top: 0.7rem;
+    }}
+
+    .gq-choice-row .stButton button {{
         width: 100%;
-        margin-top: 0.6rem;
-        padding: 0.75rem 0.85rem;
-        border-radius: 12px;
+        padding: 0.85rem 1rem;
+        border-radius: 14px;
         border: 1px solid {theme['border']};
-        background: {theme['surface']};
+        background: linear-gradient(135deg, {theme['primary_soft']} 0%, {theme['surface']} 60%);
         color: {theme['text']};
         font-size: 0.95rem;
         text-align: left;
-        transition: background 0.15s ease-out, border-color 0.15s ease-out;
+        box-shadow: 0 8px 16px rgba(15, 23, 42, 0.08);
+        transition: transform 0.08s ease-out, box-shadow 0.08s ease-out, border-color 0.08s ease-out;
     }}
 
-    .gq-choice-btn:active {{
+    .gq-choice-row .stButton button:active {{
+        transform: translateY(1px);
+        box-shadow: 0 4px 10px rgba(15, 23, 42, 0.12);
+        border-color: {theme['primary']};
+    }}
+
+    /* 回答後のカード表示 */
+    .gq-choice-card {{
+        width: 100%;
+        margin-top: 0.7rem;
+        padding: 0.85rem 1rem;
+        border-radius: 14px;
+        border: 1px solid {theme['border']};
         background: {theme['surface']};
+        font-size: 0.95rem;
+        line-height: 1.6;
+        box-shadow: 0 6px 14px rgba(15, 23, 42, 0.06);
     }}
 
-    .gq-choice-correct {{
-        background: {theme['correct']}22 !important;
-        border-color: {theme['correct']} !important;
+    .gq-choice-card-correct {{
+        border-color: {theme['correct']};
+        background: linear-gradient(135deg, {theme['correct']}22 0%, {theme['surface']} 60%);
     }}
 
-    .gq-choice-incorrect {{
-        background: {theme['incorrect']}22 !important;
-        border-color: {theme['incorrect']} !important;
+    .gq-choice-card-incorrect {{
+        border-color: {theme['incorrect']};
+        background: linear-gradient(135deg, {theme['incorrect']}18 0%, {theme['surface']} 60%);
     }}
 
     .gq-explanation-box {{
-        padding: 0.9rem;
-        border-radius: 10px;
+        padding: 0.9rem 1rem;
+        border-radius: 12px;
         background: {theme['surface_alt']};
         border: 1px solid {theme['border']};
         font-size: 0.95rem;
-        line-height: 1.6;
+        line-height: 1.7;
     }}
 
     .gq-footer {{
-        margin-top: 0.75rem;
+        margin-top: 0.9rem;
         display: flex;
         flex-direction: column;
         gap: 0.15rem;
         font-size: 0.75rem;
-        color: {theme['muted']};
+        color: {theme['text']}99;
         text-align: center;
     }}
 
@@ -226,7 +246,6 @@ def _generate_css(theme: Dict[str, str]) -> str:
     }}
     </style>
     """
-
 
 # ----------------------------------------------------------------------
 #  テーマ選択 / CSS 適用
@@ -337,7 +356,6 @@ def render_quiz_page(
             )
 
         with col_right:
-            # モードバッジ
             mode_html = (
                 f"<div style='text-align:right;'>"
                 f"<span class='gq-mode-badge'>{mode_label}</span>"
@@ -346,11 +364,9 @@ def render_quiz_page(
             st.markdown(mode_html, unsafe_allow_html=True)
             _render_theme_selector(theme_key)
 
-        # クォータメーター
         if quota_status is not None:
             _render_quota_meter(theme, quota_status)
 
-        # 進捗バー（章内）
         if progress_ratio is not None:
             pr = min(max(progress_ratio, 0.0), 1.0)
             percent = int(pr * 100)
@@ -382,32 +398,29 @@ def render_quiz_page(
     correct_index = q.correct_index if session.is_correct is not None else None
 
     for idx, choice_text in enumerate(q.choices):
-        classes = ["gq-choice-btn"]
-
-        if answered_index is not None and correct_index is not None:
-            if idx == correct_index:
-                classes.append("gq-choice-correct")
-            elif idx == answered_index and answered_index != correct_index:
-                classes.append("gq-choice-incorrect")
-
-        class_attr = " ".join(classes)
-        button_html = f"<button class='{class_attr}'>{choice_text}</button>"
-
-        # Streamlit のボタンはクリック検知専用にし、視覚は下の HTML ボタンで表示
-        if st.button(
-            " ",
-            key=f"gq_choice_{idx}",
-            use_container_width=True,
-        ):
-            # 未回答時のみ「新たな選択」として扱う
-            if answered_index is None:
+        if answered_index is None:
+            # 未回答: カラフルなボタンとして表示
+            st.markdown("<div class='gq-choice-row'>", unsafe_allow_html=True)
+            if st.button(
+                choice_text,
+                key=f"gq_choice_{idx}",
+                use_container_width=True,
+            ):
                 selected_choice = idx
-
-        # 上記 st.button 用に class を当てるための HTML を後追いで描画（視覚のみ）
-        st.markdown(
-            f"<div style='margin-top:-3.1rem; pointer-events:none;'>{button_html}</div>",
-            unsafe_allow_html=True,
-        )
+            st.markdown("</div>", unsafe_allow_html=True)
+        else:
+            # 回答済み: 正解/不正解を色分けしたカードとして表示
+            classes = ["gq-choice-card"]
+            if correct_index is not None:
+                if idx == correct_index:
+                    classes.append("gq-choice-card-correct")
+                elif idx == answered_index and answered_index != correct_index:
+                    classes.append("gq-choice-card-incorrect")
+            class_attr = " ".join(classes)
+            st.markdown(
+                f"<div class='{class_attr}'>{choice_text}</div>",
+                unsafe_allow_html=True,
+            )
 
     # ----------------------------------------
     # 解説（回答済みの場合のみ）
