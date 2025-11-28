@@ -5,7 +5,7 @@ ui.py
 Streamlit ベースの UI コンポーネントをまとめたモジュール。
 
 責務:
-- iPhone Safari を主ターゲットとしたレイアウトとスタイル
+- iPhone Safari を主ターターゲットとしたレイアウトとスタイル
 - 問題画面の描画（質問・選択肢・解説）
 - ヘッダー（シラバス情報・クォータメーター・テーマ切替）
 - ナビゲーションボタン（前へ / 次へ / 章変更）
@@ -18,8 +18,7 @@ Streamlit ベースの UI コンポーネントをまとめたモジュール。
 
 from __future__ import annotations
 
-from dataclasses import dataclass
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, List
 
 import streamlit as st
 
@@ -53,6 +52,18 @@ THEMES: Dict[str, Dict[str, str]] = {
         "muted": "#9ca3af",
         "correct": "#22c55e",
         "incorrect": "#d64545",
+    },
+    "blue": {
+        "bg": "#0f172a",
+        "surface": "#020617",
+        "surface_alt": "#0b1120",
+        "primary": "#38bdf8",
+        "primary_soft": "#0ea5e9",
+        "border": "#1e293b",
+        "text": "#e5e7eb",
+        "muted": "#94a3b8",
+        "correct": "#22c55e",
+        "incorrect": "#f97373",
     },
 }
 
@@ -233,13 +244,14 @@ def _ensure_theme() -> str:
 
 def _render_theme_selector(theme_key: str) -> str:
     """ヘッダーの右上あたりにテーマ切替を表示し、選択されたテーマキーを返す。"""
-    # Streamlit の radio を横並びで使用
-    labels = {"light": "ライト", "dark": "ダーク"}
+    options = ["light", "dark", "blue"]
+    labels = {"light": "Light", "dark": "Dark", "blue": "Blue"}
 
+    idx = options.index(theme_key) if theme_key in options else 0
     selected = st.radio(
         "テーマ",
-        options=list(labels.keys()),
-        index=list(labels.keys()).index(theme_key),
+        options,
+        index=idx,
         horizontal=True,
         label_visibility="collapsed",
         format_func=lambda k: labels.get(k, k),
@@ -261,18 +273,6 @@ def render_quiz_page(
     """
     クイズページ全体を描画し、ユーザー操作の結果を返す。
 
-    引数:
-        session:
-            models.SessionState のインスタンス。
-            - current_question に Question が入っている前提。
-        progress_ratio:
-            章内の進捗 (0.0〜1.0)。None の場合は表示しない。
-        quota_status:
-            MetaManager.get_quota_status() の戻り値を想定。
-            total_used_tokens / estimated_limit_tokens / last_429_at / last_error
-        mode_label:
-            画面上に表示するモード表記 (例: "ONLINE", "OFFLINE", "AUTO")。
-
     戻り値:
         {
           "selected_choice": Optional[int],   # 新たに押された選択肢 index (なければ None)
@@ -282,7 +282,6 @@ def render_quiz_page(
           "theme": str,                       # 現在のテーマキー
         }
     """
-    # セーフティ: 問題がない場合
     if not isinstance(session.current_question, Question):
         st.error("問題がまだ選択されていません。")
         return {
@@ -293,11 +292,10 @@ def render_quiz_page(
             "theme": _ensure_theme(),
         }
 
-    # テーマを決定し、CSS を適用
+    # テーマ決定と CSS 注入
     theme_key = _ensure_theme()
     theme = THEMES[theme_key]
-    css = _generate_css(theme)
-    st.markdown(css, unsafe_allow_html=True)
+    st.markdown(_generate_css(theme), unsafe_allow_html=True)
 
     # 操作結果の初期値
     selected_choice: Optional[int] = None
@@ -328,8 +326,7 @@ def render_quiz_page(
                 unsafe_allow_html=True,
             )
 
-            # 章ラベルタグ
-            tags_html = [
+            tags_html: List[str] = [
                 f"<span class='gq-tag'>{q.chapter_group}</span>",
                 f"<span class='gq-tag'>{q.chapter_id}</span>",
                 f"<span class='gq-tag'>難易度: {q.difficulty}</span>",
@@ -381,7 +378,6 @@ def render_quiz_page(
     # ----------------------------------------
     # 選択肢
     # ----------------------------------------
-    # すでに回答済みかどうか
     answered_index = session.selected_index
     correct_index = q.correct_index if session.is_correct is not None else None
 
@@ -397,8 +393,7 @@ def render_quiz_page(
         class_attr = " ".join(classes)
         button_html = f"<button class='{class_attr}'>{choice_text}</button>"
 
-        # Streamlit のボタンはクリック検知専用にして、見た目はカスタム HTML ボタンで表示する。
-        # ラベルを空文字にしておくことで、選択肢が二重に表示される問題を避ける。
+        # Streamlit のボタンはクリック検知専用にし、視覚は下の HTML ボタンで表示
         if st.button(
             " ",
             key=f"gq_choice_{idx}",
@@ -418,6 +413,7 @@ def render_quiz_page(
     # 解説（回答済みの場合のみ）
     # ----------------------------------------
     if answered_index is not None:
+        # 回答後はデフォルトで展開しておく
         with st.expander("解説", expanded=True):
             st.markdown(
                 f"<div class='gq-explanation-box'>{q.explanation}</div>",
@@ -449,8 +445,11 @@ def render_quiz_page(
         unsafe_allow_html=True,
     )
 
-    # 自動スクロールのターゲットとなるアンカー
-    st.markdown("<div id='gq-answer-bottom' class='gq-safe-bottom'></div>", unsafe_allow_html=True)
+    # 自動スクロールのターゲット
+    st.markdown(
+        "<div id='gq-answer-bottom' class='gq-safe-bottom'></div>",
+        unsafe_allow_html=True,
+    )
     st.markdown("</div>", unsafe_allow_html=True)
 
     return {
@@ -466,11 +465,9 @@ def render_quiz_page(
 #  クォータメーター描画
 # ----------------------------------------------------------------------
 def _render_quota_meter(theme: Dict[str, str], quota_status: Dict[str, Any]) -> None:
-    """
-    quota_status を元にクォータメーターを描画する。
-    quota_status は MetaManager.get_quota_status() の戻り値想定。
-    """
-    total = quota_status.get("total_used_tokens")
+    """推定クォータメーターを描画する。"""
+
+    total = int(quota_status.get("total_used_tokens", 0))
     limit = quota_status.get("estimated_limit_tokens")
     last_429_at = quota_status.get("last_429_at")
 
