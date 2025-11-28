@@ -99,17 +99,11 @@ def load_app_config() -> Dict[str, Any]:
 #  MetaManager / SessionState のラッパー
 # ----------------------------------------------------------------------
 def get_meta_manager() -> MetaManager:
-    """
-    MetaManager インスタンスを取得する。
-    最初の呼び出し時に bank/meta.json を読み込み、以降はセッションで使い回す。
-    """
+    """MetaManager をセッションに保持して返す。"""
     if "meta_manager" not in st.session_state:
-        cfg = load_app_config()
-        bank_dir = cfg.get("paths", {}).get("bank_dir", "bank") if isinstance(
-            cfg.get("paths"), dict
-        ) else "bank"
-        meta_path = os.path.join(bank_dir, "meta.json")
-        st.session_state["meta_manager"] = MetaManager(meta_path)
+        mm = MetaManager("bank/meta.json")
+        mm.load()
+        st.session_state["meta_manager"] = mm
     return st.session_state["meta_manager"]  # type: ignore[return-value]
 
 
@@ -489,6 +483,20 @@ def render_quiz_main_page() -> None:
             st.success("正解です！")
         else:
             st.warning("不正解です。解説を確認しましょう。")
+        # 回答結果が表示されたら、自動的に解説付近までスクロール
+        st.markdown(
+            """
+            <script>
+            const target = document.getElementById('gq-answer-bottom');
+            if (target) {
+                target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            } else {
+                window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+            }
+            </script>
+            """,
+            unsafe_allow_html=True,
+        )
 
         # 回答結果が表示されたら、自動的に画面下部（解説付近）までスクロールする
         st.markdown(
