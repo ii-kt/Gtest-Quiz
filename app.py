@@ -14,7 +14,7 @@ G検定対策クイズアプリ（Streamlit）エントリーポイント。
 前提:
 - bank/question_bank.jsonl にサンプル問題が格納されている
 - bank/meta.json が存在する（なければ自動で初期化される）
-- 環境変数 GEMINI_API_KEY が設定されていればオンライン出題が有効
+- config.toml に一部設定を書ける（なくても動く）
 """
 
 from __future__ import annotations
@@ -30,10 +30,22 @@ from gtest_quiz.meta import MetaManager
 from gtest_quiz.models import SessionState, Question
 from gtest_quiz.question_bank import (
     get_all_questions,
+    get_questions_by_chapter,
+    pick_random_from_chapter,
     pick_random_question,
     get_question_by_id,
 )
 from gtest_quiz.ui import render_quiz_page
+
+# toml (config 用)
+try:
+    import toml  # type: ignore[import]
+
+    HAS_TOML = True
+except Exception:  # noqa: BLE001
+    toml = None  # type: ignore[assignment]
+    HAS_TOML = False
+
 
 # ----------------------------------------------------------------------
 #  Streamlit の rerun 互換ラッパー
@@ -52,55 +64,55 @@ def rerun() -> None:
 # google-generativeai は存在しない環境でも動くように、遅延インポート + フォールバック
 try:
     import google.generativeai as genai  # type: ignore[import]
+
     HAS_GEMINI = True
-except Exception:
+except Exception:  # noqa: BLE001
     genai = None  # type: ignore[assignment]
     HAS_GEMINI = False
 
 
 # ----------------------------------------------------------------------
-#  アプリ共通設定読み込み
+#  アプリ設定読み込み
 # ----------------------------------------------------------------------
 def load_app_config() -> Dict[str, Any]:
     """
-    config.toml があれば読み込み、アプリ設定を dict で返す。
-    なければ空 dict。
+    ルート config.toml を読み込む。
+    読み込みに失敗しても空 dict を返す。
     """
     if "app_config" in st.session_state:
         return st.session_state["app_config"]
 
     cfg: Dict[str, Any] = {}
-    config_path = os.path.join(os.path.dirname(__file__), "config.toml")
-    if os.path.exists(config_path):
-        try:
-            import tomllib  # Python 3.11+
+    path = "config.toml"
 
-            with open(config_path, "rb") as f:
-                cfg = tomllib.load(f)
-        except Exception:
-            # tomllib がない環境 / 読み込み失敗時は設定なしで続行
+    if HAS_TOML and os.path.exists(path):
+        try:
+            cfg = toml.load(path)  # type: ignore[arg-type]
+        except Exception:  # noqa: BLE001
             cfg = {}
 
     st.session_state["app_config"] = cfg
-    return st.session_state["app_config"]
+    return cfg
 
 
 # ----------------------------------------------------------------------
-#  MetaManager のシングルトン取得
+#  MetaManager / SessionState のラッパー
 # ----------------------------------------------------------------------
 def get_meta_manager() -> MetaManager:
-    """meta.json を管理する MetaManager のインスタンスを返す（シングルトン）。"""
+    """
+    MetaManager インスタンスを取得する。
+    最初の呼び出し時に bank/meta.json を読み込み、以降はセッションで使い回す。
+    """
     if "meta_manager" not in st.session_state:
         cfg = load_app_config()
-        bank_dir = cfg.get("paths", {}).get("bank_dir", "bank")
+        bank_dir = cfg.get("paths", {}).get("bank_dir", "bank") if isinstance(
+            cfg.get("paths"), dict
+        ) else "bank"
         meta_path = os.path.join(bank_dir, "meta.json")
         st.session_state["meta_manager"] = MetaManager(meta_path)
     return st.session_state["meta_manager"]  # type: ignore[return-value]
 
 
-# ----------------------------------------------------------------------
-#  SessionState のシングルトン取得
-# ----------------------------------------------------------------------
 def get_session_state() -> SessionState:
     """Quiz用の SessionState をセッションに保持して返す。"""
     if "quiz_session" not in st.session_state:
@@ -115,163 +127,313 @@ def get_session_state() -> SessionState:
 
 
 def set_page(page: str) -> None:
-    """現在のページ種別を session_state に保持する。"""
     st.session_state["page"] = page
 
 
 def get_page() -> str:
-    """現在のページ種別を取得する。"""
     return st.session_state.get("page", "home")
 
 
 # ----------------------------------------------------------------------
-#  問題読み込み関連
-# ----------------------------------------------------------------------
-@st.cache_resource(show_spinner=False)
-def load_all_questions_cached() -> List[Question]:
-    """question_bank.jsonl を読み込んで Question のリストをキャッシュして返す。"""
-    # question_bank.get_all_questions は引数なしで呼び出す想定のため、余計な引数を渡さない
-    return get_all_questions()
-
-
-def load_new_question(session: SessionState, meta: MetaManager) -> None:
-    """
-    新しい問題を選んで SessionState にセットする。
-    章選択のロジックは MetaManager に委譲する。
-    """
-    questions = load_all_questions_cached()
-
-    # MetaManager から「どの章から出すか」を決めてもらう（単純なラウンドロビンなど）
-    # 現状はランダム出題だが、将来的に偏りを抑えたロジックに差し替え予定。
-    chapter_id = meta.pick_next_chapter(questions)
-
-    # その章から 1 問ランダムに選ぶ
-    q = pick_random_question(questions, chapter_id=chapter_id)
-    if q is None:
-        # フォールバックとして、全体からランダムに 1 問選ぶ
-        q = pick_random_question(questions)
-
-    if q is None:
-        # それでも見つからない場合は、アプリとしては致命的だがエラー表示で止める
-        st.error("問題が見つかりませんでした。question_bank.jsonl を確認してください。")
-        return
-
-    # SessionState を更新
-    session.start_new_question(question=q, source="offline", model_name=None)
-
-
-# ----------------------------------------------------------------------
-#  Gemini 関連（オンライン出題）
+#  Gemini 関連
 # ----------------------------------------------------------------------
 def init_gemini_if_needed() -> None:
-    """GEMINI_API_KEY があれば genai.configure を行う。"""
+    """GEMINI_API_KEY があれば設定する（なければ何もしない）。"""
     if not HAS_GEMINI:
         return
-
-    if "gemini_inited" in st.session_state:
-        return
-
-    api_key = os.environ.get("GEMINI_API_KEY")
+    api_key = os.getenv("GEMINI_API_KEY")
     if not api_key:
         return
-
     try:
         genai.configure(api_key=api_key)  # type: ignore[call-arg]
-        st.session_state["gemini_inited"] = True
-    except Exception as e:  # noqa: BLE001
-        st.warning(f"Gemini の初期化に失敗しました: {e}")
+    except Exception:  # noqa: BLE001
+        # 失敗してもアプリ自体は動かす
+        pass
 
 
-def generate_question_online() -> Optional[Question]:
+def list_available_models() -> List[str]:
     """
-    Gemini を使ってオンラインで問題文を生成するサンプル。
-    現状は PoC 的な位置づけであり、本番用ではない。
+    利用可能な Gemini モデル一覧を返す。
+    generateContent に対応しているものだけを対象にし、名前逆ソート。
     """
     if not HAS_GEMINI:
-        st.error("オンライン出題は、この環境ではサポートされていません。")
-        return None
-
-    api_key = os.environ.get("GEMINI_API_KEY")
-    if not api_key:
-        st.error("環境変数 GEMINI_API_KEY が設定されていません。")
-        return None
-
-    init_gemini_if_needed()
+        return []
 
     try:
-        model = genai.GenerativeModel("gemini-1.5-flash")  # type: ignore[attr-defined]
-        prompt = (
-            "あなたは JDLA G検定 の試験対策問題を作成する AI です。"
-            "シラバス G2024_v1.3 に沿った単一選択式の問題を 1問 日本語で作成してください。"
-            "返却形式は JSON で、キーは "
-            '{"question", "choices", "correct_index", "chapter_group", "chapter_id", "difficulty"}'
-            " としてください。"
-        )
-        resp = model.generate_content(prompt)  # type: ignore[attr-defined]
-        text = resp.text  # type: ignore[assignment]
+        models = genai.list_models()  # type: ignore[call-arg]
+    except Exception:  # noqa: BLE001
+        return []
 
-        data = json.loads(text)
-        now = datetime.now(timezone.utc).isoformat()
-        q = Question(
-            id=f"online-{now}",
-            source="online",
-            created_at=now,
-            domain="JDLA_GTEST",
-            chapter_group=data.get("chapter_group", "オンライン出題"),
-            chapter_id=data.get("chapter_id", "Online"),
-            difficulty=data.get("difficulty", "N/A"),
-            question=data["question"],
-            choices=data["choices"],
-            correct_index=int(data["correct_index"]),
-            explanation=data.get("explanation", "オンライン生成問題です。"),
-            meta={"syllabus": "G2024_v1.3"},
-        )
-        return q
-    except Exception as e:  # noqa: BLE001
-        st.error(f"オンライン問題生成に失敗しました: {e}")
+    names: List[str] = []
+    for m in models:
+        methods = getattr(m, "supported_generation_methods", [])
+        if "generateContent" in methods:
+            name = getattr(m, "name", "")
+            if isinstance(name, str) and name:
+                names.append(name)
+
+    names = sorted(names, reverse=True)
+    return names
+
+
+def get_preferred_model_name() -> Optional[str]:
+    """
+    設定画面・config.toml を踏まえて「優先モデル名」を返す。
+    実際に使えるかはオンライン出題時に再度確認する。
+    """
+    # 設定画面で指定されている場合を優先
+    preferred = st.session_state.get("preferred_model")
+    if isinstance(preferred, str) and preferred:
+        return preferred
+
+    # config.toml の [gemini].preferred_model
+    cfg = load_app_config()
+    gem_cfg = cfg.get("gemini")
+    if isinstance(gem_cfg, dict):
+        p = gem_cfg.get("preferred_model")
+        if isinstance(p, str) and p:
+            return p
+
+    # 何も指定がなければ、利用可能モデル一覧の先頭
+    candidates = list_available_models()
+    return candidates[0] if candidates else None
+
+
+def choose_model_with_fallback() -> Optional[str]:
+    """
+    優先モデル名を取得し、それが実際に利用可能かを簡易チェックする。
+    ダメなら None を返す。
+    """
+    if not HAS_GEMINI:
         return None
 
+    name = get_preferred_model_name()
+    if not name:
+        return None
 
-def load_new_question_online(session: SessionState, meta: MetaManager) -> None:
+    available = list_available_models()
+    if name not in available:
+        return None
+    return name
+
+
+def can_use_online(meta: MetaManager) -> bool:
     """
-    オンライン（Gemini）で問題を生成して SessionState にセットする。
+    オンライン出題を利用してよいかを、クォータ状況も踏まえて判定する。
     """
-    q = generate_question_online()
-    if q is None:
-        return
+    if not HAS_GEMINI:
+        return False
+    if not os.getenv("GEMINI_API_KEY"):
+        return False
 
-    session.start_new_question(question=q, source="online", model_name="gemini-1.5-flash")
-    # オンライン出題も統計に含めたい場合はここで MetaManager へ記録する
+    quota = meta.get_quota_manager()
+    remaining = quota.get_remaining_ratio()
+    # まだ上限未推定なら一旦 OK、とする
+    if remaining is None:
+        return True
+
+    # config.toml の [quota].near_limit_ratio を参照
+    cfg = load_app_config()
+    near_ratio = 0.9
+    qcfg = cfg.get("quota")
+    if isinstance(qcfg, dict):
+        r = qcfg.get("near_limit_ratio")
+        try:
+            near_ratio = float(r)
+        except Exception:  # noqa: BLE001
+            near_ratio = 0.9
+
+    # 残りが 0 に近ければオンラインはやめておく
+    return remaining > (1.0 - near_ratio)
 
 
-# ----------------------------------------------------------------------
-#  ページ描画: ホーム
-# ----------------------------------------------------------------------
-def render_home_page() -> None:
-    st.title("G検定クイズ")
+def build_online_prompt(chapter_label: str, chapter_group: str) -> str:
+    """オンライン出題用プロンプト（auto_refill.py と同系統）。"""
+    return f"""
+あなたは日本語で G検定(JDLA Deep Learning for GENERAL) の高品質な四択問題を作る専門家です。
 
-    st.markdown(
-        """
-        このアプリは、JDLA G検定 の試験対策用クイズアプリです。
+以下の制約を厳密に守って、指定されたシラバス項目に対応する四択問題を 1 問だけ生成してください。
 
-        - 公式シラバス (G2024_v1.3) に対応したオフライン問題
-        - オプションで Gemini を使ったオンライン出題
-        - 間違えた問題だけを復習するモード
-        - 章ごとの学習状況を可視化する統計ページ
+# シラバス情報
+- 分野: {chapter_group}
+- 中項目: {chapter_label}
 
-        下のボタンから、学習を始めてください。
-        """
+# 出力条件
+- G検定本試験レベルの知識を問う。
+- 四択問題 (選択肢は A/B/C/D の 4 つ) とする。
+- 問題文は 1～3 行程度に収める。
+- 選択肢は紛らわしさのあるものを含め、受験者をある程度迷わせるようにする。
+- 正解は必ず 1 つだけにする。
+- 解説では、なぜその選択肢が正しいのか、他の選択肢がなぜ誤りなのかを簡潔に説明する。
+
+# 出力フォーマット（JSON）
+次の JSON 形式のみを出力してください。日本語テキスト中に余計な説明は書かないでください。
+
+{{
+  "question": "問題文（日本語）",
+  "choices": ["Aの選択肢", "Bの選択肢", "Cの選択肢", "Dの選択肢"],
+  "correct_index": 0,
+  "explanation": "なぜその選択肢が正しいのか、他が誤りなのかの解説（日本語）"
+}}
+"""  # noqa: E501
+
+
+def generate_online_question(
+    meta: MetaManager,
+    chapter_label: str,
+) -> Optional[Question]:
+    """
+    指定された章ラベルからオンライン問題を 1問生成する。
+    失敗した場合は None を返し、呼び出し側でオフラインへフォールバックする。
+    """
+    if not can_use_online(meta):
+        return None
+
+    model_name = choose_model_with_fallback()
+    if not model_name:
+        return None
+
+    chapters = meta.meta.get("chapters", {})
+    chapter_group = "ディープラーニング"
+    for _group_key, group_val in chapters.items():
+        subchapters = group_val.get("subchapters", {})
+        for _sub_key, sub_val in subchapters.items():
+            if sub_val.get("label") == chapter_label:
+                chapter_group = group_val.get("label", chapter_group)
+                break
+
+    prompt = build_online_prompt(chapter_label=chapter_label, chapter_group=chapter_group)
+
+    try:
+        model = genai.GenerativeModel(model_name)  # type: ignore[attr-defined]
+        resp = model.generate_content(prompt)  # type: ignore[attr-defined]
+        text = resp.text
+    except Exception as e:  # noqa: BLE001
+        meta.get_quota_manager().record_error(str(e))
+        return None
+
+    try:
+        data = json.loads(text)
+    except Exception:  # noqa: BLE001
+        meta.get_quota_manager().record_error("invalid_json")
+        return None
+
+    try:
+        q = Question(
+            id=f"online-{datetime.now(timezone.utc).strftime('%Y%m%d-%H%M%S')}",
+            source="online",
+            created_at=datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+            domain="JDLA_GTEST",
+            chapter_group=chapter_group,
+            chapter_id=chapter_label,
+            difficulty="online",
+            question=data["question"],
+            choices=list(data["choices"]),
+            correct_index=int(data["correct_index"]),
+            explanation=data.get("explanation", ""),
+            meta={"model": model_name},
+        )
+    except Exception as e:  # noqa: BLE001
+        meta.get_quota_manager().record_error(f"invalid_struct: {e}")
+        return None
+
+    # トークン使用量を（概算で）記録
+    quota = meta.get_quota_manager()
+    quota.add_usage(
+        prompt_tokens=len(prompt),
+        completion_tokens=len(text),
     )
 
-    st.write("")
+    return q
+
+
+# ----------------------------------------------------------------------
+#  新しい問題のロード
+# ----------------------------------------------------------------------
+def load_new_question(session: SessionState, meta: MetaManager) -> None:
+    """
+    SessionState に新しい問題をセットする。
+    - mode = "online" の場合はオンライン優先（失敗したらオフライン）
+    - mode = "offline" の場合はオフラインのみ
+    - mode = "auto" の場合はオンライン試行→失敗時オフライン
+    いずれの場合も、MetaManager の choose_next_chapter により
+    偏りを抑えた章選択を行う。
+    """
+    all_questions = get_all_questions()
+    available_chapters = sorted({q.chapter_id for q in all_questions})
+    if not available_chapters:
+        st.error("問題バンクが空です。bank/question_bank.jsonl を確認してください。")
+        return
+
+    chapter_id = meta.choose_next_chapter(available_chapter_ids=available_chapters)
+    if chapter_id is None:
+        # フォールバックとして先頭の章を使用
+        chapter_id = list(available_chapters)[0]
+
+    mode = session.mode
+
+    def try_online() -> Optional[Question]:
+        return generate_online_question(meta, chapter_label=chapter_id)
+
+    def try_offline() -> Optional[Question]:
+        q = pick_random_from_chapter(chapter_id)
+        if q is None:
+            q = pick_random_question()
+        return q
+
+    question: Optional[Question] = None
+    source = "offline"
+
+    if mode == "online":
+        question = try_online()
+        source = "online" if question is not None else "offline"
+        if question is None:
+            question = try_offline()
+    elif mode == "offline":
+        question = try_offline()
+        source = "offline"
+    else:  # auto
+        question = try_online()
+        source = "online" if question is not None else "offline"
+        if question is None:
+            question = try_offline()
+
+    if question is None:
+        st.error("新しい問題を取得できませんでした。")
+        return
+
+    session.start_new_question(
+        question=question,
+        source="online" if source == "online" else "offline",
+        model_name=get_preferred_model_name() if source == "online" else None,
+    )
+
+
+# ----------------------------------------------------------------------
+#  ページ: ホーム
+# ----------------------------------------------------------------------
+def render_home_page() -> None:
+    st.markdown("## 🧠 G検定クイズへようこそ")
+
+    meta = get_meta_manager()
+    usage = meta.meta.get("usage", {})
+    total = usage.get("total_questions", 0)
+    online = usage.get("online_questions", 0)
+    offline = usage.get("offline_questions", 0)
+
+    st.write(f"- 累計解答数: **{total} 問**")
+    st.write(f"- オンライン出題: **{online} 問**")
+    st.write(f"- オフライン出題: **{offline} 問**")
+
+    st.write("---")
 
     col1, col2 = st.columns(2)
     with col1:
-        if st.button("🎯 クイズを始める", use_container_width=True):
+        if st.button("🚀 クイズを始める", use_container_width=True):
             set_page("quiz")
             rerun()
     with col2:
-        if st.button("📝 間違えた問題を復習", use_container_width=True):
+        if st.button("🔁 間違えた問題だけで復習", use_container_width=True):
             set_page("review")
             rerun()
 
@@ -287,39 +449,18 @@ def render_home_page() -> None:
             rerun()
 
     st.write("")
-    if st.button("❓ 使い方を見る", use_container_width=True):
+    if st.button("❓ 使い方", use_container_width=True):
         set_page("help")
         rerun()
 
 
 # ----------------------------------------------------------------------
-#  ページ描画: クイズ本編
+#  ページ: クイズ
 # ----------------------------------------------------------------------
-def render_quiz_page_main() -> None:
+def render_quiz_main_page() -> None:
     session = get_session_state()
     meta = get_meta_manager()
 
-    st.caption("クイズモード: オフライン問題 (sample)")
-
-    # モード切替（将来的な拡張用。現状はオフライン固定）
-    mode = st.radio(
-        "出題モード",
-        options=["auto", "offline", "online"],
-        format_func=lambda m: {
-            "auto": "AUTO（状況に応じて自動）",
-            "offline": "オフライン問題のみ",
-            "online": "Gemini オンライン出題",
-        }.get(m, m),
-        horizontal=True,
-        index=["auto", "offline", "online"].index(session.mode)
-        if session.mode in ["auto", "offline", "online"]
-        else 0,
-    )
-    session.mode = mode
-
-    st.write("")
-
-    # まだ問題がなければ 1 問ロード
     if not isinstance(session.current_question, Question):
         load_new_question(session, meta)
 
@@ -349,7 +490,7 @@ def render_quiz_page_main() -> None:
         else:
             st.warning("不正解です。解説を確認しましょう。")
 
-        # 回答直後に、解説と結果が見える位置まで自動スクロールする
+        # 回答結果が表示されたら、自動的に画面下部（解説付近）までスクロールする
         st.markdown(
             """
             <script>
@@ -394,54 +535,26 @@ def render_review_page() -> None:
     session = get_session_state()
     meta = get_meta_manager()  # noqa: F841 （今後拡張用に保持）
 
-    st.title("間違えた問題を復習")
+    st.markdown("## 🔁 間違えた問題だけで復習")
 
-    if not session.history:
-        st.info("まだ解答履歴がありません。まずはクイズを解いてみましょう。")
-        if st.button("🎯 クイズを始める", use_container_width=True):
-            set_page("quiz")
-            rerun()
-        return
-
-    wrong_history = [h for h in session.history if not h.correct]
-
-    if not wrong_history:
-        st.success("間違えた問題はありません。素晴らしいです！")
-        if st.button("🏠 ホームに戻る", use_container_width=True):
-            set_page("home")
-            rerun()
-        return
-
-    st.write(f"これまでに間違えた問題: {len(wrong_history)} 問")
-
-    selected_idx = st.number_input(
-        "復習する履歴のインデックス（0 が最初）",
-        min_value=0,
-        max_value=len(wrong_history) - 1,
-        value=0,
-        step=1,
-    )
-
-    record = wrong_history[selected_idx]
-    q = get_question_by_id(record.question_id)
-
-    if q is None:
-        st.error("該当する問題データが見つかりませんでした。")
+    wrongs = [r for r in session.history if not r.correct]
+    if not wrongs:
+        st.info("まだ間違えた問題の記録がありません。クイズを解いてから利用してください。")
     else:
-        st.subheader("復習問題")
-        st.markdown(f"**問題 ID:** {q.id}")
-        st.markdown(f"**章:** {q.chapter_group} / {q.chapter_id}")
-        st.markdown(f"**難易度:** {q.difficulty}")
-        st.write("")
-        st.markdown(q.question)
-        st.write("")
-        for i, choice in enumerate(q.choices):
-            prefix = "✅" if i == q.correct_index else "❌"
-            st.markdown(f"- {prefix} {choice}")
-        st.write("")
-        st.markdown("**解説:**")
-        st.info(q.explanation)
+        st.write(f"これまでに **{len(wrongs)} 問** 間違えています。")
+        rows = []
+        for r in reversed(wrongs[-10:]):
+            q = get_question_by_id(r.question_id)
+            if q is None:
+                continue
+            rows.append(f"- [{q.chapter_id}] {q.question[:40]}...")
+        if rows:
+            st.markdown("\n".join(rows))
 
+    st.write("")
+    if st.button("🎯 クイズ画面へ戻る", use_container_width=True):
+        set_page("quiz")
+        rerun()
     if st.button("🏠 ホームに戻る", use_container_width=True):
         set_page("home")
         rerun()
@@ -454,11 +567,9 @@ def render_stats_page() -> None:
     session = get_session_state()
     meta = get_meta_manager()
 
-    st.title("学習統計")
+    st.markdown("## 📊 学習統計")
 
-    st.write("※現状は簡易的な統計のみを表示しています。")
-
-    st.subheader("セッション内の解答履歴")
+    st.write("### セッション内の解答履歴")
     if not session.history:
         st.info("まだ解答履歴がありません。")
     else:
@@ -479,11 +590,12 @@ def render_stats_page() -> None:
             )
 
     st.write("")
-    st.subheader("Meta 情報 (token 使用量など)")
+    st.markdown("### Meta 情報 (クォータ状況)")
 
     quota = meta.get_quota_status()
-    st.write(quota)
+    st.json(quota)
 
+    st.write("")
     if st.button("🏠 ホームに戻る", use_container_width=True):
         set_page("home")
         rerun()
@@ -493,42 +605,59 @@ def render_stats_page() -> None:
 #  ページ: 設定
 # ----------------------------------------------------------------------
 def render_settings_page() -> None:
+    st.markdown("## ⚙️ 設定")
+
     session = get_session_state()
     cfg = load_app_config()
 
-    st.title("設定")
+    st.markdown("### 出題モード")
 
-    st.subheader("出題モードの初期値")
-    default_mode = st.selectbox(
-        "アプリ起動時のモード",
-        options=["auto", "offline", "online"],
-        format_func=lambda m: {
-            "auto": "AUTO（状況に応じて自動）",
-            "offline": "オフライン問題のみ",
-            "online": "オンライン出題（Gemini）",
-        }.get(m, m),
-        index=["auto", "offline", "online"].index(
-            cfg.get("app", {}).get("default_mode", "auto")
-            if isinstance(cfg.get("app"), dict)
-            else "auto"
-        ),
+    mode_map = {
+        "auto": "自動 (オンライン優先+フォールバック)",
+        "online": "オンライン優先",
+        "offline": "オフラインのみ",
+    }
+    modes = list(mode_map.keys())
+    labels = [mode_map[m] for m in modes]
+
+    try:
+        index = modes.index(session.mode)
+    except ValueError:
+        index = 0
+
+    selected_label = st.radio(
+        "出題モード",
+        labels,
+        index=index,
     )
+    selected_mode = modes[labels.index(selected_label)]
+    session.mode = selected_mode
 
-    if st.button("設定を保存", use_container_width=True):
-        cfg.setdefault("app", {})["default_mode"] = default_mode
-        config_path = os.path.join(os.path.dirname(__file__), "config.toml")
+    st.write("---")
+    st.markdown("### オンラインモデル")
+
+    models = list_available_models()
+    if not models:
+        st.info("利用可能な Gemini モデルが見つかりませんでした。")
+    else:
+        preferred = get_preferred_model_name()
         try:
-            import tomli_w  # type: ignore[import]
-        except Exception:
-            st.error("tomli_w がインストールされていないため、設定を保存できません。")
-        else:
-            with open(config_path, "wb") as f:
-                tomli_w.dump(cfg, f)  # type: ignore[arg-type]
-            st.success("設定を保存しました。")
+            idx = models.index(preferred) if preferred else 0
+        except ValueError:
+            idx = 0
 
-    st.write("")
-    st.subheader("現在のセッション状態（デバッグ用）")
-    st.json(session.to_dict())
+        selected_model = st.selectbox(
+            "使用するモデル",
+            models,
+            index=idx,
+        )
+        st.session_state["preferred_model"] = selected_model
+        st.write(f"現在の優先モデル: `{selected_model}`")
+
+    st.write("---")
+    st.markdown("### config.toml (参考)")
+
+    st.json(cfg)
 
     if st.button("🏠 ホームに戻る", use_container_width=True):
         set_page("home")
@@ -539,26 +668,15 @@ def render_settings_page() -> None:
 #  ページ: 使い方
 # ----------------------------------------------------------------------
 def render_help_page() -> None:
-    st.title("使い方")
+    st.markdown("## ❓ 使い方")
 
     st.markdown(
         """
-        ### 基本的な使い方
-
-        1. ホーム画面の「🎯 クイズを始める」を押すと、ランダムに 1 問出題されます。
-        2. 選択肢のいずれかを押すと、その場で正解／不正解が判定されます。
-        3. 「解説」セクションで、なぜその選択肢が正解なのかを確認できます。
-        4. 「次の問題 ▶」ボタンで別の問題に進みます。
-        5. 「間違えた問題を復習」では、過去に不正解だった問題だけを復習できます。
-        """
-    )
-
-    st.markdown(
-        """
-        ### オンライン出題について
-
-        - オンライン出題を有効にするには、環境変数 `GEMINI_API_KEY` を設定してください。
-        - オンライン出題は PoC 段階であり、問題品質は保証されません。
+1. ホーム画面の「🚀 クイズを始める」からクイズを開始します。
+2. 各問題の選択肢のいずれかをタップすると、その場で正解／不正解が判定されます。
+3. 判定後は自動的に画面下部（メッセージと解説付近）までスクロールします。
+4. 「次の問題 ▶」ボタンで別の問題に進みます。
+5. 「🔁 間違えた問題だけで復習」で、不正解だった問題だけを復習できます。
         """
     )
 
@@ -577,23 +695,13 @@ def main() -> None:
         layout="centered",
     )
 
-    cfg = load_app_config()
-    if cfg.get("ui", {}).get("hide_streamlit_style", True):
-        hide_style = """
-            <style>
-            #MainMenu {visibility: hidden;}
-            footer {visibility: hidden;}
-            header {visibility: hidden;}
-            </style>
-        """
-        st.markdown(hide_style, unsafe_allow_html=True)
+    load_app_config()
+    init_gemini_if_needed()
 
     page = get_page()
 
-    if page == "home":
-        render_home_page()
-    elif page == "quiz":
-        render_quiz_page_main()
+    if page == "quiz":
+        render_quiz_main_page()
     elif page == "review":
         render_review_page()
     elif page == "stats":
