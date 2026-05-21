@@ -1,0 +1,13 @@
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# Local runtime artifacts
+backend/app/*.db
+backend/app/test_*.db
+
+# Local mutable metadata
+bank/meta.json
+
+# Local secrets
+.env

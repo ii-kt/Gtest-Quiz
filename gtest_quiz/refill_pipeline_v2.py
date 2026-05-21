@@ -14,6 +14,7 @@ from gtest_quiz.question_quality import (
     is_probable_duplicate,
     validate_generated_question,
 )
+from gtest_quiz.env import get_env, load_dotenv
 
 
 class Config:
@@ -42,7 +43,8 @@ def _gen_retry(model, prompt):
 
 
 def run():
-    key = os.getenv("GEMINI_API_KEY")
+    load_dotenv()
+    key = get_env("GEMINI_API_KEY")
     if not key:
         return
 
