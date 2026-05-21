@@ -1,0 +1,27 @@
+name: Release Readiness
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'v*.*.*'
+
+jobs:
+  release-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install deps
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest pytest-cov
+      - name: Gate tests
+        run: |
+          pytest tests/test_question_quality.py tests/integration tests/backend tests/frontend tests/e2e --cov=gtest_quiz --cov=backend/app --cov-report=term-missing --cov-fail-under=70
+      - name: Build artifact snapshot
+        run: |
+          tar -czf gtest-quiz-${GITHUB_REF_NAME}.tgz app.py backend frontend gtest_quiz bank requirements.txt config.toml README.md docs

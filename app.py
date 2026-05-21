@@ -36,6 +36,7 @@ from gtest_quiz.question_bank import (
     get_question_by_id,
 )
 from gtest_quiz.ui import render_quiz_page
+from gtest_quiz.env import get_env, load_dotenv
 
 # toml (config 用)
 try:
@@ -135,7 +136,8 @@ def init_gemini_if_needed() -> None:
     """GEMINI_API_KEY があれば設定する（なければ何もしない）。"""
     if not HAS_GEMINI:
         return
-    api_key = os.getenv("GEMINI_API_KEY")
+    load_dotenv()
+    api_key = get_env("GEMINI_API_KEY")
     if not api_key:
         return
     try:
@@ -217,7 +219,8 @@ def can_use_online(meta: MetaManager) -> bool:
     """
     if not HAS_GEMINI:
         return False
-    if not os.getenv("GEMINI_API_KEY"):
+    load_dotenv()
+    if not get_env("GEMINI_API_KEY"):
         return False
 
     quota = meta.get_quota_manager()

@@ -21,3 +21,4 @@ typing_extensions>=4.10.0
 
 # GitHub Actions で必要になる可能性がある（Auto-Refill 用）
 requests>=2.31.0
+pydantic>=2.7.0

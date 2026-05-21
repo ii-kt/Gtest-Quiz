@@ -19,6 +19,7 @@ from gtest_quiz.question_quality import (
     is_probable_duplicate,
     validate_generated_question,
 )
+from gtest_quiz.env import get_env, load_dotenv
 
 
 class RefillConfig:
@@ -114,7 +115,8 @@ def _load_duplicate_index() -> object:
 
 
 def run_refill(config: RefillConfig, meta_path: str = "bank/meta.json") -> RefillStats:
-    api_key = os.getenv("GEMINI_API_KEY")
+    load_dotenv()
+    api_key = get_env("GEMINI_API_KEY")
     if not api_key:
         raise RuntimeError("GEMINI_API_KEY is not set")
 

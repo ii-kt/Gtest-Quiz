@@ -11,8 +11,9 @@ Streamlit、Gemini API、ファイルパス、モデルフェールオーバー�
 
 from dataclasses import dataclass
 from pathlib import Path
-import os
 import json
+
+from gtest_quiz.env import get_env, load_dotenv
 
 
 # ------------------------------------------------------------
@@ -86,18 +87,9 @@ class AppConfig:
         GEMINI_API_KEY が使えるようにする。
         """
 
-        key = os.environ.get("GEMINI_API_KEY")
-        if key:
-            return key
-
-        # ローカル開発などで .env を使いたい場合にも対応
-        env_path = ROOT_DIR / ".env"
-        if env_path.exists():
-            for line in env_path.read_text().splitlines():
-                if line.startswith("GEMINI_API_KEY="):
-                    return line.split("=", 1)[1].strip()
-
-        return ""  # キーなし → オフラインモードへ
+        load_dotenv(ROOT_DIR / ".env")
+        key = get_env("GEMINI_API_KEY", "")
+        return key  # キーなし → オフラインモードへ
 
     # ============================================================
     # JSON 読み取りユーティリティ

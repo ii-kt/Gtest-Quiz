@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>G検定クイズ v2</title>
+  <style>
+    body{font-family:system-ui,-apple-system,sans-serif;max-width:760px;margin:2rem auto;padding:0 1rem;background:#f8fafc;color:#0f172a}
+    .card{background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:1rem;box-shadow:0 6px 18px rgba(15,23,42,.06)}
+    .choice{display:block;width:100%;margin:.5rem 0;padding:.85rem;border:1px solid #cbd5e1;border-radius:10px;text-align:left;background:#fff;cursor:pointer}
+    .choice:hover{background:#f1f5f9}
+    .row{display:flex;justify-content:space-between;align-items:center;gap:.5rem;flex-wrap:wrap}
+    .pill{padding:.25rem .6rem;border:1px solid #cbd5e1;border-radius:999px;font-size:.8rem;color:#334155}
+    #result{white-space:pre-wrap;line-height:1.6}
+    #nextBtn{margin-top:1rem;padding:.7rem 1rem;border:none;background:#2563eb;color:#fff;border-radius:10px;cursor:pointer}
+    #authForm{display:flex;gap:.5rem;align-items:center;margin-bottom:1rem}
+    #username{padding:.5rem;border:1px solid #cbd5e1;border-radius:8px}
+  </style>
+</head>
+<body>
+  <div class="row"><h1>G検定クイズ v2</h1><span id="score" class="pill">0 / 0</span><span id="total" class="pill">解答総数: -</span></div>
+  <form id="authForm" class="card">
+    <input id="username" name="username" placeholder="ユーザー名 (3-40文字)" minlength="3" maxlength="40" required />
+    <button type="submit">ログイン/新規登録</button>
+    <span id="authState" class="pill">未認証</span>
+  </form>
+  <div class="card">
+    <p id="chapter" class="pill"></p>
+    <h2 id="question"></h2>
+    <div id="choices"></div>
+    <p id="result"></p>
+    <button id="nextBtn" type="button">次の問題へ</button>
+  </div>
+<script>
+const API = window.API_BASE || 'http://localhost:8000';
+let token = localStorage.getItem('quiz_token') || '';
+let current = null;
+let answered = false;
+let total = 0;
+let correct = 0;
+
+const scoreEl = document.getElementById('score');
+const nextBtn = document.getElementById('nextBtn');
+const totalEl = document.getElementById('total');
+const authState = document.getElementById('authState');
+
+function setScore(){ scoreEl.textContent = `${correct} / ${total}`; }
+function setAuthState(text){ authState.textContent = text; }
+
+async function auth(username){
+  const payload = {username};
+  const headers = {'Content-Type':'application/json'};
+  let r = await fetch(`${API}/auth/login`,{method:'POST',headers,body:JSON.stringify(payload)});
+  if(r.status===404){
+    r = await fetch(`${API}/auth/register`,{method:'POST',headers,body:JSON.stringify(payload)});
+  }
+  if(!r.ok) throw new Error('auth failed');
+  const d = await r.json();
+  token = d.token;
+  localStorage.setItem('quiz_token', token);
+  setAuthState(`認証済み: ${d.username}`);
+}
+
+async function loadStats(){
+  try{
+    const r = await fetch(`${API}/quiz/stats`,{headers:{'Authorization':`Bearer ${token}`}});
+    if(!r.ok) return;
+    const s = await r.json();
+    totalEl.textContent = `解答総数: ${s.user.total_answers}`;
+  }catch(_e){}
+}
+
+async function loadQ(){
+  answered = false;
+  document.getElementById('result').textContent = '';
+  if(!token){ document.getElementById('result').textContent = '先に認証してください。'; return; }
+  const r = await fetch(`${API}/quiz/next`,{headers:{'Authorization':`Bearer ${token}`}});
+  if(!r.ok){ document.getElementById('result').textContent = '問題を読み込めませんでした。'; return; }
+  current = await r.json();
+  document.getElementById('chapter').textContent = `${current.chapter_group} / ${current.chapter_id}`;
+  document.getElementById('question').textContent = current.question;
+  const box = document.getElementById('choices'); box.innerHTML='';
+  current.choices.forEach((c,i)=>{
+    const b=document.createElement('button');
+    b.className='choice';
+    b.textContent=`${String.fromCharCode(65+i)}. ${c}`;
+    b.onclick=()=>answer(i);
+    box.appendChild(b);
+  });
+}
+
+async function answer(i){
+ if(answered || !current) return;
+ answered = true;
+ const r=await fetch(`${API}/quiz/answer`,{method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${token}`},body:JSON.stringify({question_id:current.id,selected_index:i})});
+ const d=await r.json();
+ if(!r.ok){ document.getElementById('result').textContent = `エラー: ${d.detail || '回答処理に失敗しました。'}`; return; }
+ total += 1;
+ if(d.correct) correct += 1;
+ setScore();
+ await loadStats();
+ document.getElementById('result').textContent = d.correct
+   ? `✅ 正解\n\n${d.explanation}`
+   : `❌ 不正解（正答 ${'ABCD'[d.correct_index]}）\n\n${d.explanation}`;
+}
+
+document.getElementById('authForm').addEventListener('submit', async (e)=>{
+  e.preventDefault();
+  const username = document.getElementById('username').value.trim();
+  if(!username) return;
+  try{ await auth(username); await loadStats(); await loadQ(); }
+  catch(_e){ setAuthState('認証失敗'); }
+});
+
+nextBtn.addEventListener('click', loadQ);
+setScore();
+if(token){ setAuthState('認証済み'); loadStats(); }
+</script>
+</body>
+</html>
