@@ -75,7 +75,7 @@ def test_frontend_pwa_assets_exist():
 
     worker_text = worker.read_text(encoding="utf-8")
     assert "CACHE_NAME" in worker_text
-    assert "gtest-quiz-static-v1" in worker_text
+    assert "gtest-quiz-static-v2" in worker_text
     assert "./offline-app.js" in worker_text
     assert "./question-bank.json" in worker_text
     assert "cacheFirst" in worker_text
