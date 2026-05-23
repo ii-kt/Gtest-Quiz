@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="G検定 Quiz">
+  <rect width="128" height="128" rx="24" fill="#0f766e"/>
+  <path d="M32 36h64v12H32zM32 58h64v12H32zM32 80h40v12H32z" fill="#fff"/>
+  <circle cx="92" cy="86" r="10" fill="#a7f3d0"/>
+</svg>

@@ -1,17 +1,18 @@
-"""Refill pipeline orchestrating generation, validation, de-duplication, and quota guard."""
+"""Content refill pipeline backed by the schema-first content factory."""
 
 from __future__ import annotations
 
 import json
-import os
-import random
 import time
-from datetime import datetime, timezone
-from typing import Dict, Iterable, List, Optional
+from typing import Any, Dict, Optional, Tuple
 
-import google.generativeai as genai
+from pydantic import BaseModel
 
+from gtest_quiz.content_factory import ContentFactory, FactoryConfig, FactoryStats, GeneratedQuestionSpec
+from gtest_quiz.env import get_env, load_dotenv
 from gtest_quiz.meta import MetaManager
+<<<<<<< ours
+=======
 from gtest_quiz.models import Question
 from gtest_quiz.question_bank import load_question_bank
 from gtest_quiz.question_quality import (
@@ -20,6 +21,19 @@ from gtest_quiz.question_quality import (
     validate_generated_question,
 )
 from gtest_quiz.env import get_env, load_dotenv
+<<<<<<< ours
+<<<<<<< ours
+<<<<<<< ours
+<<<<<<< ours
+>>>>>>> theirs
+=======
+>>>>>>> theirs
+=======
+>>>>>>> theirs
+=======
+>>>>>>> theirs
+=======
+>>>>>>> theirs
 
 
 class RefillConfig:
@@ -29,7 +43,7 @@ class RefillConfig:
         model_name: str = "gemini-2.5-flash-lite",
         target_daily: int = 80,
         max_retry: int = 3,
-        min_explanation_length: int = 60,
+        min_explanation_length: int = 80,
         sleep_seconds_on_429: float = 2.0,
         hard_stop_on_near_quota: bool = True,
     ) -> None:
@@ -48,40 +62,24 @@ class RefillStats:
         self.rejected = 0
         self.duplicates = 0
         self.errors = 0
+        self.queued_for_review = 0
 
-
-PROMPT_TEMPLATE = """
-あなたはG検定（JDLA）の専門問題作成AIです。
-
-制約:
-- 4択問題
-- 正解は1つのみ
-- 誤答はもっともらしく、知識が曖昧な受験者が誤る内容にする
-- 暗記ではなく理解を問う
-
-出力は必ずJSONのみ（コードブロック禁止）:
-{
-  "question": "",
-  "choices": ["","","",""],
-  "correct_index": 0,
-  "explanation": "",
-  "difficulty": "basic|standard|advanced"
-}
-
-分野: {group}
-項目: {label}
-"""
-
-
-def _build_prompt(group: str, label: str) -> str:
-    return PROMPT_TEMPLATE.format(group=group, label=label)
+    @classmethod
+    def from_factory(cls, stats: FactoryStats) -> "RefillStats":
+        item = cls()
+        item.generated = stats.generated
+        item.accepted = stats.accepted
+        item.rejected = stats.rejected
+        item.duplicates = stats.duplicates
+        item.errors = stats.errors
+        item.queued_for_review = stats.queued_for_review
+        return item
 
 
 def _safe_parse_json(text: str) -> Optional[Dict[str, object]]:
     try:
         return json.loads(text)
     except Exception:
-        # try to trim to JSON block
         start = text.find("{")
         end = text.rfind("}")
         if start >= 0 and end > start:
@@ -92,26 +90,62 @@ def _safe_parse_json(text: str) -> Optional[Dict[str, object]]:
         return None
 
 
-def _generate_once(model: genai.GenerativeModel, prompt: str) -> Optional[Dict[str, object]]:
+def _load_generator(api_key: str, model_name: str) -> Tuple[str, Any]:
     try:
-        res = model.generate_content(prompt)
-        return _safe_parse_json(getattr(res, "text", ""))
+        from google import genai
+
+        return "google-genai", genai.Client(api_key=api_key)
     except Exception:
-        return None
+        try:
+            import google.generativeai as legacy_genai
+        except Exception as e:
+            raise RuntimeError("Install google-genai to use Gemini refill generation") from e
+
+        legacy_genai.configure(api_key=api_key)
+        return "legacy", legacy_genai.GenerativeModel(model_name)
 
 
-def _generate_with_retry(model: genai.GenerativeModel, prompt: str, max_retry: int) -> Optional[Dict[str, object]]:
-    for _ in range(max_retry):
-        data = _generate_once(model, prompt)
-        if isinstance(data, dict):
-            return data
-    return None
+class GeminiQuestionGenerator:
+    def __init__(self, *, api_key: str, model_name: str, max_retry: int = 3, sleep_seconds: float = 0.4) -> None:
+        self.model_name = model_name
+        self.max_retry = max_retry
+        self.sleep_seconds = sleep_seconds
+        self.generator_kind, self.generator = _load_generator(api_key, model_name)
 
+    def generate(self, prompt: str, schema: type[GeneratedQuestionSpec]) -> Dict[str, Any]:
+        last_error: Optional[Exception] = None
+        for _ in range(self.max_retry):
+            try:
+                data = self._generate_once(prompt, schema)
+                if isinstance(data, dict):
+                    return data
+            except Exception as e:
+                last_error = e
+            time.sleep(self.sleep_seconds)
+        if last_error:
+            raise last_error
+        raise RuntimeError("Gemini did not return a structured question")
 
-def _load_duplicate_index() -> object:
-    bank = load_question_bank()
-    items = [q.to_dict() for q in bank.values()]
-    return build_duplicate_index(items)
+    def _generate_once(self, prompt: str, schema: type[BaseModel]) -> Optional[Dict[str, Any]]:
+        if self.generator_kind == "google-genai":
+            response = self.generator.models.generate_content(
+                model=self.model_name,
+                contents=prompt,
+                config={
+                    "response_mime_type": "application/json",
+                    "response_schema": schema,
+                    "temperature": 0.62,
+                },
+            )
+            parsed = getattr(response, "parsed", None)
+            if isinstance(parsed, BaseModel):
+                return parsed.model_dump()
+            if isinstance(parsed, dict):
+                return parsed
+            return _safe_parse_json(getattr(response, "text", ""))
+
+        response = self.generator.generate_content(prompt)
+        return _safe_parse_json(getattr(response, "text", ""))
 
 
 def run_refill(config: RefillConfig, meta_path: str = "bank/meta.json") -> RefillStats:
@@ -120,73 +154,24 @@ def run_refill(config: RefillConfig, meta_path: str = "bank/meta.json") -> Refil
     if not api_key:
         raise RuntimeError("GEMINI_API_KEY is not set")
 
-    genai.configure(api_key=api_key)
-
     meta = MetaManager(meta_path)
     meta.load()
-
-    # quota guard (best-effort)
     quota = meta.quota
     if config.hard_stop_on_near_quota and quota.is_near_limit(0.9):
         return RefillStats()
 
-    model = genai.GenerativeModel(config.model_name)
-
-    duplicate_index = _load_duplicate_index()
-
-    chapters = meta.get_all_chapter_labels()
-    random.shuffle(chapters)
-
-    stats = RefillStats()
-    results: List[Question] = []
-
-    for ch in chapters:
-        if stats.accepted >= config.target_daily:
-            break
-
-        prompt = _build_prompt("G検定", ch)
-        data = _generate_with_retry(model, prompt, config.max_retry)
-        stats.generated += 1
-
-        if not data:
-            stats.errors += 1
-            continue
-
-        validation = validate_generated_question(data, min_explanation_length=config.min_explanation_length)
-        if not validation.is_valid:
-            stats.rejected += 1
-            continue
-
-        if is_probable_duplicate(str(data.get("question", "")), duplicate_index):
-            stats.duplicates += 1
-            continue
-
-        q = Question(
-            id=f"AUTO_{int(datetime.now(timezone.utc).timestamp() * 1000)}",
-            source="auto_refill_quality",
-            created_at=datetime.now(timezone.utc).isoformat(),
-            domain="JDLA",
-            chapter_group="G検定",
-            chapter_id=ch,
-            difficulty=str(data.get("difficulty", "standard")),
-            question=str(data.get("question", "")),
-            choices=[str(x) for x in data.get("choices", [])],
-            correct_index=int(data.get("correct_index", 0)),
-            explanation=str(data.get("explanation", "")),
-            syllabus="G2024",
-        )
-
-        results.append(q)
-        stats.accepted += 1
-
-        # update duplicate index incrementally
-        duplicate_index = build_duplicate_index([*({"question": q.question} for q in results)])
-
-    if results:
-        with open("bank/question_bank.jsonl", "a", encoding="utf-8") as f:
-            for q in results:
-                f.write(json.dumps(q.to_dict(), ensure_ascii=False) + "\n")
-
-        meta.save()
-
-    return stats
+    generator = GeminiQuestionGenerator(
+        api_key=api_key,
+        model_name=config.model_name,
+        max_retry=config.max_retry,
+        sleep_seconds=config.sleep_seconds_on_429,
+    )
+    factory = ContentFactory(
+        FactoryConfig(
+            model_name=config.model_name,
+            target_accepts=config.target_daily,
+            min_explanation_length=config.min_explanation_length,
+        ),
+        generator,
+    )
+    return RefillStats.from_factory(factory.run(meta_path=meta_path))

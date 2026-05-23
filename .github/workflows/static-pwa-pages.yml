@@ -1,0 +1,46 @@
+name: Static PWA Pages
+
+on:
+  workflow_dispatch:
+  push:
+    branches: ["main"]
+    paths:
+      - "frontend/src/**"
+      - "bank/question_bank.jsonl"
+      - "tools/build_static_pwa_assets.py"
+      - ".github/workflows/static-pwa-pages.yml"
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Build static PWA assets
+        run: |
+          python tools/build_static_pwa_assets.py
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+      - name: Upload static PWA
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: frontend/src
+      - name: Deploy to Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

@@ -1,0 +1,328 @@
+from __future__ import annotations
+
+import json
+import time
+from dataclasses import dataclass, field
+from datetime import datetime, timezone
+from pathlib import Path
+from typing import Any, Dict, Iterable, List, Optional, Protocol
+
+from pydantic import BaseModel, Field
+
+from gtest_quiz.meta import MetaManager
+from gtest_quiz.models import Question
+from gtest_quiz.question_bank import load_question_bank
+from gtest_quiz.question_quality import (
+    ValidationResult,
+    build_duplicate_index,
+    is_probable_duplicate,
+    validate_generated_question,
+)
+
+
+PROMPT_VERSION = "gtest_factory_v3_2026-05-21"
+QUESTION_BANK_PATH = Path("bank/question_bank.jsonl")
+REVIEW_QUEUE_PATH = Path("bank/generated_review_queue.jsonl")
+PROVENANCE_PATH = Path("bank/question_provenance.jsonl")
+
+
+class GeneratedQuestionSpec(BaseModel):
+    question: str = Field(min_length=18)
+    choices: List[str] = Field(min_length=4, max_length=4)
+    correct_index: int = Field(ge=0, le=3)
+    explanation: str = Field(min_length=60)
+    difficulty: str = Field(pattern="^(basic|standard|advanced)$")
+    syllabus_node: str = Field(min_length=1)
+    concepts: List[str] = Field(default_factory=list)
+    source_hint: str = ""
+
+
+class QuestionGenerator(Protocol):
+    def generate(self, prompt: str, schema: type[GeneratedQuestionSpec]) -> Dict[str, Any]:
+        ...
+
+
+@dataclass(frozen=True)
+class FactoryConfig:
+    model_name: str = "gemini-2.5-flash-lite"
+    prompt_version: str = PROMPT_VERSION
+    target_accepts: int = 80
+    min_explanation_length: int = 80
+    review_threshold: int = 75
+    max_attempts_per_target: int = 3
+    question_bank_path: Path = QUESTION_BANK_PATH
+    review_queue_path: Path = REVIEW_QUEUE_PATH
+    provenance_path: Path = PROVENANCE_PATH
+
+
+@dataclass
+class FactoryStats:
+    generated: int = 0
+    accepted: int = 0
+    queued_for_review: int = 0
+    rejected: int = 0
+    duplicates: int = 0
+    errors: int = 0
+    targets: int = 0
+
+
+@dataclass(frozen=True)
+class CoverageTarget:
+    chapter_group: str
+    chapter_id: str
+    current_count: int
+    target_count: int
+    priority: float
+
+
+@dataclass(frozen=True)
+class CandidateDecision:
+    action: str
+    validation: ValidationResult
+    duplicate: bool
+    reasons: List[str] = field(default_factory=list)
+
+
+def _now_iso() -> str:
+    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+def _jsonl_append(path: Path, item: Dict[str, Any]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("a", encoding="utf-8") as handle:
+        handle.write(json.dumps(item, ensure_ascii=False) + "\n")
+
+
+def build_generation_prompt(target: CoverageTarget, prompt_version: str = PROMPT_VERSION) -> str:
+    return f"""
+あなたはJDLA G検定の専門作問者です。
+prompt_version: {prompt_version}
+
+目的:
+- 受験者の理解度を測る高品質な4択問題を1問作る
+- 暗記だけでなく概念の違い、実務上の判断、代表的な落とし穴を問う
+- 誤答はもっともらしいが、解説で明確に区別できるものにする
+
+出力制約:
+- response_schema に完全準拠
+- 正解は1つ
+- explanation は根拠と誤答との差分を含める
+- syllabus_node には対象項目名を入れる
+
+対象大分類: {target.chapter_group}
+対象項目: {target.chapter_id}
+現在の問題数: {target.current_count}
+目標問題数: {target.target_count}
+""".strip()
+
+
+def load_existing_items(path: Path = QUESTION_BANK_PATH) -> List[Dict[str, Any]]:
+    if not path.exists():
+        return []
+    items: List[Dict[str, Any]] = []
+    with path.open("r", encoding="utf-8") as handle:
+        for raw in handle:
+            raw = raw.strip()
+            if not raw:
+                continue
+            try:
+                data = json.loads(raw)
+            except json.JSONDecodeError:
+                continue
+            if isinstance(data, dict):
+                items.append(data)
+    return items
+
+
+def build_coverage_targets(meta: MetaManager, existing_items: Iterable[Dict[str, Any]], per_chapter_floor: int = 10) -> List[CoverageTarget]:
+    counts: Dict[str, int] = {}
+    groups: Dict[str, str] = {}
+    for item in existing_items:
+        chapter_id = str(item.get("chapter_id", ""))
+        if not chapter_id:
+            continue
+        counts[chapter_id] = counts.get(chapter_id, 0) + 1
+        groups.setdefault(chapter_id, str(item.get("chapter_group", "")))
+
+    targets: List[CoverageTarget] = []
+    chapters = meta.meta.get("chapters", {})
+    for _group_key, group_val in chapters.items():
+        group_label = str(group_val.get("label", ""))
+        subchapters = group_val.get("subchapters", {})
+        if not isinstance(subchapters, dict):
+            continue
+        for _sub_key, sub_val in subchapters.items():
+            chapter_id = str(sub_val.get("label", ""))
+            if not chapter_id:
+                continue
+            current = counts.get(chapter_id, 0)
+            target_count = max(per_chapter_floor, int(float(sub_val.get("weight", 1.0)) * per_chapter_floor))
+            deficit = max(0, target_count - current)
+            priority = deficit / max(1, target_count)
+            targets.append(
+                CoverageTarget(
+                    chapter_group=groups.get(chapter_id, group_label),
+                    chapter_id=chapter_id,
+                    current_count=current,
+                    target_count=target_count,
+                    priority=priority,
+                )
+            )
+
+    for chapter_id, current in counts.items():
+        if not any(target.chapter_id == chapter_id for target in targets):
+            targets.append(
+                CoverageTarget(
+                    chapter_group=groups.get(chapter_id, ""),
+                    chapter_id=chapter_id,
+                    current_count=current,
+                    target_count=max(per_chapter_floor, current),
+                    priority=0.0,
+                )
+            )
+
+    return sorted(targets, key=lambda t: (-t.priority, t.current_count, t.chapter_id))
+
+
+def decide_candidate(
+    data: Dict[str, Any],
+    *,
+    duplicate_index: Any,
+    min_explanation_length: int,
+    review_threshold: int,
+) -> CandidateDecision:
+    validation = validate_generated_question(data, min_explanation_length=min_explanation_length)
+    duplicate = is_probable_duplicate(str(data.get("question", "")), duplicate_index)
+    reasons = list(validation.reasons)
+    if duplicate:
+        reasons.append("probable duplicate")
+    if duplicate:
+        return CandidateDecision("duplicate", validation, duplicate, reasons)
+    if validation.is_valid:
+        return CandidateDecision("accept", validation, duplicate, reasons)
+    if validation.score >= review_threshold:
+        return CandidateDecision("review", validation, duplicate, reasons)
+    return CandidateDecision("reject", validation, duplicate, reasons)
+
+
+def to_question_record(
+    data: Dict[str, Any],
+    *,
+    target: CoverageTarget,
+    config: FactoryConfig,
+    validation: ValidationResult,
+) -> Dict[str, Any]:
+    stamp = int(time.time() * 1000)
+    return {
+        "id": f"AUTO_{stamp}_{abs(hash(data.get('question', ''))) % 100000}",
+        "source": "content_factory",
+        "created_at": _now_iso(),
+        "domain": "JDLA",
+        "chapter_group": target.chapter_group,
+        "chapter_id": target.chapter_id,
+        "difficulty": str(data.get("difficulty", "standard")),
+        "question": str(data.get("question", "")),
+        "choices": [str(choice) for choice in data.get("choices", [])],
+        "correct_index": int(data.get("correct_index", 0)),
+        "explanation": str(data.get("explanation", "")),
+        "syllabus": "G2024_v1.3",
+        "provenance": {
+            "model": config.model_name,
+            "prompt_version": config.prompt_version,
+            "validator_score": validation.score,
+            "validator_reasons": validation.reasons,
+            "syllabus_node": str(data.get("syllabus_node", target.chapter_id)),
+            "concepts": list(data.get("concepts", [])),
+            "generated_at": _now_iso(),
+        },
+    }
+
+
+class ContentFactory:
+    def __init__(self, config: FactoryConfig, generator: QuestionGenerator) -> None:
+        self.config = config
+        self.generator = generator
+
+    def run(self, meta_path: str = "bank/meta.json") -> FactoryStats:
+        meta = MetaManager(meta_path)
+        meta.load()
+        existing = load_existing_items(self.config.question_bank_path)
+        duplicate_index = build_duplicate_index(existing)
+        targets = [target for target in build_coverage_targets(meta, existing) if target.priority > 0]
+
+        stats = FactoryStats(targets=len(targets))
+        accepted_records: List[Dict[str, Any]] = []
+
+        for target in targets:
+            if stats.accepted >= self.config.target_accepts:
+                break
+            for _attempt in range(self.config.max_attempts_per_target):
+                if stats.accepted >= self.config.target_accepts:
+                    break
+                prompt = build_generation_prompt(target, self.config.prompt_version)
+                try:
+                    data = self.generator.generate(prompt, GeneratedQuestionSpec)
+                    stats.generated += 1
+                except Exception as e:
+                    stats.errors += 1
+                    self._queue_error(target, str(e))
+                    continue
+
+                decision = decide_candidate(
+                    data,
+                    duplicate_index=duplicate_index,
+                    min_explanation_length=self.config.min_explanation_length,
+                    review_threshold=self.config.review_threshold,
+                )
+                if decision.action == "duplicate":
+                    stats.duplicates += 1
+                    continue
+                if decision.action == "reject":
+                    stats.rejected += 1
+                    self._queue_review(target, data, decision)
+                    continue
+                if decision.action == "review":
+                    stats.queued_for_review += 1
+                    self._queue_review(target, data, decision)
+                    continue
+
+                record = to_question_record(data, target=target, config=self.config, validation=decision.validation)
+                _jsonl_append(self.config.question_bank_path, record)
+                _jsonl_append(self.config.provenance_path, {"id": record["id"], **record["provenance"]})
+                accepted_records.append(record)
+                stats.accepted += 1
+                duplicate_index = build_duplicate_index([*existing, *accepted_records])
+
+        return stats
+
+    def _queue_review(self, target: CoverageTarget, data: Dict[str, Any], decision: CandidateDecision) -> None:
+        _jsonl_append(
+            self.config.review_queue_path,
+            {
+                "queued_at": _now_iso(),
+                "target": target.__dict__,
+                "candidate": data,
+                "decision": decision.action,
+                "score": decision.validation.score,
+                "reasons": decision.reasons,
+                "prompt_version": self.config.prompt_version,
+                "model": self.config.model_name,
+            },
+        )
+
+    def _queue_error(self, target: CoverageTarget, error: str) -> None:
+        _jsonl_append(
+            self.config.review_queue_path,
+            {
+                "queued_at": _now_iso(),
+                "target": target.__dict__,
+                "decision": "error",
+                "error": error,
+                "prompt_version": self.config.prompt_version,
+                "model": self.config.model_name,
+            },
+        )
+
+
+def question_to_model(data: Dict[str, Any]) -> Question:
+    return Question.from_dict(data)
