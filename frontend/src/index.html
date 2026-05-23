@@ -2,13 +2,9 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8" />
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <meta name="theme-color" content="#101828" />
+  <meta name="theme-color" content="#f6f7fb" />
+  <meta name="description" content="G検定向けの完全オフライン静的PWA" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-title" content="G検定 Quiz" />
   <meta name="apple-mobile-web-app-status-bar-style" content="default" />
@@ -16,491 +12,812 @@
   <link rel="apple-touch-icon" href="./pwa-icon-180.png" />
   <title>G検定 Quiz Practice</title>
   <style>
-    :root {
-      color-scheme: light;
-      --bg: #f7f8fa;
-      --ink: #101828;
-      --muted: #667085;
-      --line: #d9dee7;
-      --panel: #ffffff;
-      --soft: #eef2f6;
-      --primary: #101828;
-      --accent: #0f766e;
-      --blue: #2563eb;
-      --amber: #b45309;
-      --red: #b42318;
-      --green: #047857;
-      --shadow: 0 16px 40px rgba(16, 24, 40, .08);
-    }
+    @layer reset, tokens, base, layout, components, states, responsive;
 
-    * { box-sizing: border-box; }
+    @layer reset {
+      *,
+      *::before,
+      *::after { box-sizing: border-box; }
 
-    body {
-      margin: 0;
-      min-height: 100vh;
-      background: var(--bg);
-      color: var(--ink);
-      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-    }
-
-    button,
-    select {
-      min-height: 40px;
-      border-radius: 7px;
-      border: 1px solid var(--line);
-      background: #fff;
-      color: var(--ink);
-      font: inherit;
-    }
-
-    button {
-      padding: 0 13px;
-      cursor: pointer;
-      font-weight: 760;
-      transition: background .16s ease, border-color .16s ease, transform .16s ease;
-    }
-
-    button:disabled {
-      cursor: not-allowed;
-      opacity: .5;
-    }
-
-    button:not(:disabled):hover {
-      background: var(--soft);
-      border-color: #b8c2cf;
-    }
-
-    button:not(:disabled):active {
-      transform: translateY(1px);
-    }
-
-    button:focus-visible,
-    select:focus-visible {
-      outline: 3px solid rgba(37, 99, 235, .24);
-      outline-offset: 2px;
-    }
-
-    .primary {
-      background: var(--primary);
-      color: #fff;
-      border-color: var(--primary);
-    }
-
-    .primary:not(:disabled):hover {
-      background: #1d2939;
-      border-color: #1d2939;
-    }
-
-    .shell {
-      width: min(1200px, calc(100vw - 28px));
-      margin: 0 auto;
-      padding: max(14px, env(safe-area-inset-top)) 0 28px;
-    }
-
-    .top {
-      display: grid;
-      grid-template-columns: minmax(0, 1fr) auto;
-      gap: 14px;
-      align-items: end;
-      margin-bottom: 14px;
-    }
-
-    h1 {
-      margin: 0;
-      font-size: clamp(1.35rem, 2.5vw, 2.15rem);
-      line-height: 1.1;
-      letter-spacing: 0;
-    }
-
-    .subline {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      margin-top: 9px;
-      color: var(--muted);
-      font-size: .9rem;
-    }
-
-    .toolbar {
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-      justify-content: flex-end;
-    }
-
-    .badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      min-height: 26px;
-      border-radius: 999px;
-      border: 1px solid var(--line);
-      padding: 0 9px;
-      background: #fff;
-      color: #344054;
-      font-size: .78rem;
-      font-weight: 760;
-      white-space: nowrap;
-    }
-
-    .badge::before {
-      content: "";
-      width: 7px;
-      height: 7px;
-      border-radius: 50%;
-      background: #98a2b3;
-    }
-
-    .badge[data-tone="green"]::before { background: var(--green); }
-    .badge[data-tone="amber"]::before { background: var(--amber); }
-    .badge[data-tone="red"]::before { background: var(--red); }
-    .badge[data-tone="blue"]::before { background: var(--blue); }
-
-    .layout {
-      display: grid;
-      grid-template-columns: minmax(0, 1fr) 340px;
-      gap: 14px;
-      align-items: start;
-    }
-
-    .panel {
-      background: var(--panel);
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      box-shadow: var(--shadow);
-      overflow: hidden;
-    }
-
-    .quiz {
-      min-height: 610px;
-      display: grid;
-      grid-template-rows: auto auto 1fr auto;
-    }
-
-    .head,
-    .meta {
-      min-height: 52px;
-      padding: 0 16px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-      border-bottom: 1px solid var(--line);
-      background: #fbfcfd;
-    }
-
-    .head strong {
-      font-size: .95rem;
-    }
-
-    #chapter {
-      min-width: 0;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-      color: var(--muted);
-      font-size: .9rem;
-    }
-
-    .cluster {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 7px;
-      justify-content: flex-end;
-    }
-
-    .loading {
-      height: 3px;
-      overflow: hidden;
-      background: var(--soft);
-    }
-
-    .loading span {
-      display: block;
-      width: 38%;
-      height: 100%;
-      background: var(--accent);
-      animation: slide 1s ease-in-out infinite;
-    }
-
-    .loading[hidden] { display: none; }
-
-    @keyframes slide {
-      from { transform: translateX(-120%); }
-      to { transform: translateX(320%); }
-    }
-
-    .question {
-      display: grid;
-      align-content: start;
-      gap: 16px;
-      padding: 24px;
-    }
-
-    #question {
-      margin: 0;
-      font-size: clamp(1.22rem, 2vw, 1.68rem);
-      line-height: 1.55;
-      letter-spacing: 0;
-      overflow-wrap: anywhere;
-    }
-
-    #choices {
-      display: grid;
-      gap: 10px;
-    }
-
-    .choice {
-      width: 100%;
-      min-height: 58px;
-      display: grid;
-      grid-template-columns: 34px minmax(0, 1fr);
-      gap: 12px;
-      align-items: start;
-      padding: 12px;
-      text-align: left;
-      border-color: #cbd5df;
-    }
-
-    .choice[aria-pressed="true"] { border-color: var(--blue); background: #eef4ff; }
-    .choice.is-correct { border-color: rgba(4, 120, 87, .55); background: rgba(4, 120, 87, .08); }
-    .choice.is-wrong { border-color: rgba(180, 35, 24, .42); background: rgba(180, 35, 24, .07); }
-
-    .key {
-      display: grid;
-      place-items: center;
-      width: 34px;
-      height: 34px;
-      border-radius: 50%;
-      background: var(--soft);
-      font-weight: 850;
-    }
-
-    .choice-text {
-      line-height: 1.55;
-      overflow-wrap: anywhere;
-    }
-
-    .feedback {
-      min-height: 134px;
-      padding: 16px 22px 20px;
-      background: #fbfcfd;
-      border-top: 1px solid var(--line);
-    }
-
-    #result {
-      margin: 0;
-      color: #344054;
-      line-height: 1.7;
-      white-space: pre-wrap;
-    }
-
-    .actions {
-      display: flex;
-      justify-content: flex-end;
-      gap: 8px;
-      margin-top: 14px;
-    }
-
-    .side {
-      display: grid;
-      gap: 14px;
-    }
-
-    .stats {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-
-    .stat {
-      min-height: 84px;
-      padding: 13px 14px;
-      border-right: 1px solid var(--line);
-      border-bottom: 1px solid var(--line);
-    }
-
-    .stat:nth-child(2n) { border-right: 0; }
-
-    .label {
-      display: block;
-      color: var(--muted);
-      font-size: .76rem;
-      font-weight: 760;
-    }
-
-    .value {
-      display: block;
-      margin-top: 7px;
-      font-size: 1.46rem;
-      font-weight: 860;
-      letter-spacing: 0;
-    }
-
-    .body {
-      display: grid;
-      gap: 10px;
-      padding: 14px;
-    }
-
-    .row {
-      display: grid;
-      gap: 6px;
-    }
-
-    .row-label {
-      display: flex;
-      justify-content: space-between;
-      gap: 10px;
-      color: #475467;
-      font-size: .84rem;
-    }
-
-    .row-label span:first-child {
-      min-width: 0;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-
-    .bar {
-      height: 9px;
-      border-radius: 999px;
-      background: #e5e9ef;
-      overflow: hidden;
-    }
-
-    .bar > span {
-      display: block;
-      height: 100%;
-      width: 0%;
-      background: linear-gradient(90deg, var(--red), var(--amber), var(--green));
-    }
-
-    .timeline {
-      display: grid;
-      grid-template-columns: 8px minmax(0, 1fr) auto;
-      gap: 10px;
-      align-items: center;
-      color: #475467;
-      font-size: .88rem;
-    }
-
-    .dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      background: var(--blue);
-    }
-
-    .dot.correct { background: var(--green); }
-    .dot.wrong { background: var(--red); }
-
-    .empty,
-    .status {
-      color: var(--muted);
-      line-height: 1.6;
-      font-size: .9rem;
-    }
-
-    select {
-      width: 100%;
-      padding: 0 10px;
-    }
-
-    #importFile { display: none; }
-
-    @media (max-width: 940px) {
-      .top,
-      .layout {
-        grid-template-columns: 1fr;
+      html {
+        min-height: 100%;
+        background: #f6f7fb;
+        color: #15171f;
+        text-size-adjust: 100%;
       }
-      .toolbar { justify-content: flex-start; }
-      .quiz { min-height: 0; }
+
+      body {
+        min-height: 100vh;
+        margin: 0;
+      }
+
+      button,
+      select {
+        font: inherit;
+      }
+
+      button {
+        appearance: none;
+      }
     }
 
-    @media (max-width: 560px) {
-      .shell {
-        width: min(100vw - 18px, 1200px);
-        padding-bottom: calc(20px + env(safe-area-inset-bottom));
+    @layer tokens {
+      :root {
+        color-scheme: light;
+        --canvas: #f6f7fb;
+        --surface: rgba(255, 255, 255, .86);
+        --surface-strong: #ffffff;
+        --ink: #15171f;
+        --muted: #687084;
+        --faint: #9299aa;
+        --line: rgba(31, 35, 49, .12);
+        --line-strong: rgba(31, 35, 49, .2);
+        --teal: #008f8c;
+        --green: #12815f;
+        --coral: #e85b42;
+        --amber: #b87900;
+        --violet: #6857d9;
+        --blue: #246bcb;
+        --ink-soft: #2a2f3d;
+        --shadow-soft: 0 22px 70px rgba(35, 39, 54, .12);
+        --shadow-tight: 0 10px 30px rgba(35, 39, 54, .1);
+        --radius-xl: 24px;
+        --radius-lg: 18px;
+        --radius-md: 12px;
+        --radius-sm: 8px;
+        --tap: 44px;
+        --font: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "Hiragino Sans", "Yu Gothic UI", sans-serif;
       }
-      .toolbar > *,
-      .actions > * {
+    }
+
+    @layer base {
+      body {
+        color: var(--ink);
+        font-family: var(--font);
+        letter-spacing: 0;
+        background:
+          linear-gradient(180deg, rgba(255, 255, 255, .72), rgba(246, 247, 251, .92)),
+          linear-gradient(90deg, rgba(0, 143, 140, .08) 0 1px, transparent 1px 100%),
+          linear-gradient(180deg, rgba(104, 87, 217, .06) 0 1px, transparent 1px 100%),
+          var(--canvas);
+        background-size: auto, 46px 46px, 46px 46px, auto;
+      }
+
+      button,
+      select {
+        min-height: var(--tap);
+        border: 1px solid var(--line);
+        border-radius: var(--radius-sm);
+        background: rgba(255, 255, 255, .86);
+        color: var(--ink);
+      }
+
+      button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        padding: 0 14px;
+        font-weight: 760;
+        cursor: pointer;
+        transition:
+          background .18s ease,
+          border-color .18s ease,
+          color .18s ease,
+          box-shadow .18s ease,
+          transform .18s ease;
+      }
+
+      button:not(:disabled):hover {
+        border-color: var(--line-strong);
+        background: #fff;
+        box-shadow: 0 8px 22px rgba(35, 39, 54, .09);
+        transform: translateY(-1px);
+      }
+
+      button:not(:disabled):active {
+        transform: translateY(0);
+      }
+
+      button:disabled {
+        cursor: not-allowed;
+        opacity: .46;
+      }
+
+      button:focus-visible,
+      select:focus-visible {
+        outline: 3px solid rgba(0, 143, 140, .24);
+        outline-offset: 3px;
+      }
+
+      select {
         width: 100%;
+        padding: 0 12px;
+        font-weight: 720;
       }
-      .meta,
-      .actions {
+    }
+
+    @layer layout {
+      .app-shell {
+        width: min(1440px, calc(100vw - 32px));
+        min-height: 100vh;
+        margin: 0 auto;
+        padding:
+          max(18px, env(safe-area-inset-top))
+          0
+          calc(28px + env(safe-area-inset-bottom));
+      }
+
+      .app-top {
+        position: sticky;
+        top: 0;
+        z-index: 20;
         display: grid;
-        align-items: stretch;
+        grid-template-columns: minmax(0, 1fr) auto auto;
+        gap: 16px;
+        align-items: center;
+        padding: 12px 0 18px;
+        backdrop-filter: blur(18px);
       }
-      .cluster { justify-content: flex-start; }
-      .question,
-      .feedback {
-        padding-left: 14px;
-        padding-right: 14px;
+
+      .brand {
+        display: flex;
+        min-width: 0;
+        align-items: center;
+        gap: 12px;
       }
-      .stats { grid-template-columns: 1fr; }
-      .stat { border-right: 0; }
+
+      .brand-mark {
+        display: grid;
+        flex: 0 0 auto;
+        width: 42px;
+        height: 42px;
+        place-items: center;
+        border: 1px solid rgba(0, 143, 140, .38);
+        border-radius: 12px;
+        background:
+          linear-gradient(135deg, rgba(0, 143, 140, .16), rgba(232, 91, 66, .1)),
+          #fff;
+        color: #0d6867;
+        font-size: 1rem;
+        font-weight: 900;
+        box-shadow: var(--shadow-tight);
+      }
+
+      h1 {
+        margin: 0;
+        font-size: clamp(1.2rem, 1.9vw, 1.75rem);
+        line-height: 1.05;
+        letter-spacing: 0;
+      }
+
+      .brand-sub {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 7px;
+        margin-top: 8px;
+      }
+
+      .top-actions {
+        display: flex;
+        gap: 8px;
+        justify-content: flex-end;
+      }
+
+      .workspace {
+        container-type: inline-size;
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(320px, 380px);
+        gap: 18px;
+        align-items: start;
+      }
+
+      .practice-panel,
+      .insight-panel {
+        border: 1px solid var(--line);
+        border-radius: var(--radius-xl);
+        background: var(--surface);
+        box-shadow: var(--shadow-soft);
+        overflow: clip;
+      }
+
+      .practice-panel {
+        min-height: min(760px, calc(100vh - 116px));
+        display: grid;
+        grid-template-rows: auto auto minmax(0, 1fr) auto;
+        backdrop-filter: blur(20px);
+      }
+
+      .panel-top,
+      .feedback-panel,
+      .section-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+      }
+
+      .panel-top {
+        min-height: 66px;
+        padding: 0 22px;
+        border-bottom: 1px solid var(--line);
+        background: rgba(255, 255, 255, .7);
+      }
+
+      .question-stage {
+        display: grid;
+        align-content: start;
+        gap: 22px;
+        padding: clamp(20px, 3vw, 36px);
+      }
+
+      .question-copy {
+        display: grid;
+        gap: 12px;
+      }
+
+      .choice-grid {
+        display: grid;
+        gap: 12px;
+      }
+
+      .feedback-panel {
+        align-items: end;
+        padding: 18px 22px 22px;
+        border-top: 1px solid var(--line);
+        background: rgba(255, 255, 255, .74);
+      }
+
+      .feedback-copy {
+        min-width: 0;
+      }
+
+      .feedback-actions {
+        display: flex;
+        flex: 0 0 auto;
+        gap: 8px;
+      }
+
+      .side-stack {
+        display: grid;
+        gap: 18px;
+      }
+
+      .insight-panel {
+        background: rgba(255, 255, 255, .78);
+        container-type: inline-size;
+      }
+
+      .section-head {
+        min-height: 56px;
+        padding: 0 16px;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .metric-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .metric {
+        min-height: 92px;
+        padding: 16px;
+        border-right: 1px solid var(--line);
+        border-bottom: 1px solid var(--line);
+      }
+
+      .metric:nth-child(2n) {
+        border-right: 0;
+      }
+
+      .panel-body {
+        display: grid;
+        gap: 12px;
+        padding: 16px;
+      }
+    }
+
+    @layer components {
+      .badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        min-height: 28px;
+        max-width: 100%;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        padding: 0 10px;
+        background: rgba(255, 255, 255, .74);
+        color: var(--ink-soft);
+        font-size: .78rem;
+        font-weight: 800;
+        white-space: nowrap;
+      }
+
+      .badge::before {
+        content: "";
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: var(--faint);
+        box-shadow: 0 0 0 4px rgba(146, 153, 170, .12);
+      }
+
+      .badge[data-tone="green"]::before { background: var(--green); box-shadow: 0 0 0 4px rgba(18, 129, 95, .12); }
+      .badge[data-tone="amber"]::before { background: var(--amber); box-shadow: 0 0 0 4px rgba(184, 121, 0, .13); }
+      .badge[data-tone="red"]::before { background: var(--coral); box-shadow: 0 0 0 4px rgba(232, 91, 66, .14); }
+      .badge[data-tone="blue"]::before { background: var(--blue); box-shadow: 0 0 0 4px rgba(36, 107, 203, .13); }
+
+      .primary {
+        border-color: #15171f;
+        background: #15171f;
+        color: #fff;
+      }
+
+      .primary:not(:disabled):hover {
+        border-color: #15171f;
+        background: #242936;
+        box-shadow: 0 12px 28px rgba(21, 23, 31, .22);
+      }
+
+      .ghost-danger {
+        color: #9b301f;
+      }
+
+      .chapter-line {
+        min-width: 0;
+        overflow: hidden;
+        color: var(--muted);
+        font-size: .9rem;
+        font-weight: 720;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .meta-cluster {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        justify-content: flex-end;
+      }
+
+      .loading {
+        height: 3px;
+        overflow: hidden;
+        background: rgba(31, 35, 49, .08);
+      }
+
+      .loading span {
+        display: block;
+        width: 36%;
+        height: 100%;
+        background: linear-gradient(90deg, var(--teal), var(--coral), var(--violet));
+        animation: loading-slide 1.05s cubic-bezier(.6, 0, .2, 1) infinite;
+      }
+
+      .loading[hidden] {
+        display: none;
+      }
+
+      .eyebrow {
+        margin: 0;
+        color: var(--teal);
+        font-size: .78rem;
+        font-weight: 900;
+        letter-spacing: .08em;
+        text-transform: uppercase;
+      }
+
+      #question {
+        max-width: 58rem;
+        margin: 0;
+        font-size: clamp(1.42rem, 2.5vw, 2.35rem);
+        font-weight: 850;
+        line-height: 1.52;
+        letter-spacing: 0;
+        overflow-wrap: anywhere;
+        text-wrap: pretty;
+      }
+
+      .choice {
+        width: 100%;
+        min-height: 68px;
+        display: grid;
+        grid-template-columns: 38px minmax(0, 1fr);
+        gap: 14px;
+        align-items: center;
+        padding: 14px;
+        border-color: rgba(31, 35, 49, .14);
+        border-radius: var(--radius-md);
+        background: rgba(255, 255, 255, .82);
+        text-align: left;
+      }
+
+      .choice:hover {
+        border-color: rgba(0, 143, 140, .34);
+      }
+
+      .key {
+        display: grid;
+        width: 38px;
+        height: 38px;
+        place-items: center;
+        border: 1px solid rgba(31, 35, 49, .1);
+        border-radius: 11px;
+        background: #f1f4f8;
+        color: #303646;
+        font-weight: 900;
+      }
+
+      .choice-text {
+        min-width: 0;
+        color: var(--ink-soft);
+        font-size: 1rem;
+        font-weight: 680;
+        line-height: 1.55;
+        overflow-wrap: anywhere;
+      }
+
+      #result {
+        max-width: 58rem;
+        min-height: 4.8em;
+        margin: 0;
+        color: #3d4352;
+        font-size: .98rem;
+        line-height: 1.72;
+        white-space: pre-wrap;
+        text-wrap: pretty;
+      }
+
+      .metric-label,
+      .row-label {
+        color: var(--muted);
+        font-size: .78rem;
+        font-weight: 800;
+      }
+
+      .metric-value {
+        display: block;
+        margin-top: 8px;
+        color: var(--ink);
+        font-size: clamp(1.38rem, 4vw, 2rem);
+        font-weight: 900;
+        line-height: 1;
+      }
+
+      .row {
+        display: grid;
+        gap: 8px;
+      }
+
+      .row-label {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+      }
+
+      .row-label span:first-child {
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .bar {
+        height: 10px;
+        overflow: hidden;
+        border-radius: 999px;
+        background: rgba(31, 35, 49, .09);
+      }
+
+      .bar > span {
+        display: block;
+        width: 0%;
+        height: 100%;
+        border-radius: inherit;
+        background: linear-gradient(90deg, var(--coral), var(--amber), var(--green));
+      }
+
+      .timeline {
+        display: grid;
+        grid-template-columns: 9px minmax(0, 1fr) auto;
+        gap: 10px;
+        align-items: center;
+        color: var(--ink-soft);
+        font-size: .9rem;
+      }
+
+      .timeline span:nth-child(2) {
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .dot {
+        width: 9px;
+        height: 9px;
+        border-radius: 50%;
+        background: var(--blue);
+      }
+
+      .dot.correct { background: var(--green); }
+      .dot.wrong { background: var(--coral); }
+
+      .empty,
+      .status {
+        color: var(--muted);
+        font-size: .9rem;
+        line-height: 1.6;
+      }
+
+      #importFile {
+        display: none;
+      }
+    }
+
+    @layer states {
+      .choice[aria-pressed="true"] {
+        border-color: rgba(36, 107, 203, .42);
+        background: rgba(36, 107, 203, .08);
+      }
+
+      .choice.is-correct {
+        border-color: rgba(18, 129, 95, .45);
+        background: rgba(18, 129, 95, .1);
+      }
+
+      .choice.is-correct .key {
+        border-color: rgba(18, 129, 95, .32);
+        background: rgba(18, 129, 95, .14);
+        color: #0b684b;
+      }
+
+      .choice.is-wrong {
+        border-color: rgba(232, 91, 66, .44);
+        background: rgba(232, 91, 66, .1);
+      }
+
+      .choice.is-wrong .key {
+        border-color: rgba(232, 91, 66, .34);
+        background: rgba(232, 91, 66, .13);
+        color: #9b301f;
+      }
+
+      @keyframes loading-slide {
+        from { transform: translateX(-120%); }
+        to { transform: translateX(320%); }
+      }
+
+      @media (prefers-reduced-motion: no-preference) {
+        .practice-panel,
+        .insight-panel {
+          animation: surface-in .42s ease both;
+        }
+
+        .choice {
+          animation: choice-in .24s ease both;
+        }
+
+        .choice:nth-child(2) { animation-delay: .035s; }
+        .choice:nth-child(3) { animation-delay: .07s; }
+        .choice:nth-child(4) { animation-delay: .105s; }
+      }
+
+      @keyframes surface-in {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+
+      @keyframes choice-in {
+        from { opacity: 0; transform: translateY(6px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+    }
+
+    @layer responsive {
+      @container (max-width: 300px) {
+        .metric-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .metric {
+          border-right: 0;
+        }
+      }
+
+      @media (max-width: 920px) {
+        .app-top {
+          grid-template-columns: 1fr;
+        }
+
+        .top-actions,
+        .brand-sub {
+          justify-content: flex-start;
+        }
+      }
+
+      @media (max-width: 980px) {
+        .workspace {
+          grid-template-columns: 1fr;
+        }
+
+        .practice-panel {
+          min-height: 0;
+        }
+
+        .side-stack {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+      }
+
+      @media (max-width: 640px) {
+        .app-shell {
+          width: min(100vw - 18px, 1440px);
+          padding-top: max(10px, env(safe-area-inset-top));
+        }
+
+        .app-top {
+          position: static;
+          gap: 12px;
+          padding-bottom: 12px;
+        }
+
+        .brand-mark {
+          width: 38px;
+          height: 38px;
+          border-radius: 10px;
+        }
+
+        .top-actions,
+        .feedback-actions {
+          display: grid;
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+
+        .feedback-actions {
+          grid-template-columns: 1fr 1fr;
+        }
+
+        .practice-panel,
+        .insight-panel {
+          border-radius: 18px;
+        }
+
+        .panel-top,
+        .feedback-panel {
+          display: grid;
+          align-items: stretch;
+          padding-inline: 14px;
+        }
+
+        .meta-cluster {
+          justify-content: flex-start;
+        }
+
+        .question-stage {
+          padding: 18px 14px 22px;
+          gap: 18px;
+        }
+
+        #question {
+          font-size: 1.36rem;
+        }
+
+        .choice {
+          min-height: 64px;
+          grid-template-columns: 34px minmax(0, 1fr);
+          gap: 12px;
+          padding: 12px;
+        }
+
+        .key {
+          width: 34px;
+          height: 34px;
+          border-radius: 9px;
+        }
+
+        .feedback-panel {
+          gap: 16px;
+        }
+
+        .side-stack {
+          grid-template-columns: 1fr;
+        }
+
+        .metric-grid {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+      }
+
+      @media (max-width: 390px) {
+        .metric-grid,
+        .feedback-actions {
+          grid-template-columns: 1fr;
+        }
+
+        .metric {
+          border-right: 0;
+        }
+      }
     }
   </style>
 </head>
 <body>
-  <main class="shell">
-    <header class="top">
-      <div>
-        <h1>G検定 Quiz Practice</h1>
-        <div class="subline">
-          <span id="apiState" class="badge" data-tone="green">完全オフライン</span>
-          <span id="sessionState" class="badge" data-tone="blue">端末保存</span>
-          <span id="queueState" class="badge" data-tone="amber">問題 0</span>
+  <main class="app-shell">
+    <header class="app-top">
+      <div class="brand">
+        <div class="brand-mark" aria-hidden="true">GQ</div>
+        <div>
+          <h1>G検定 Quiz Practice</h1>
+          <div class="brand-sub" aria-label="app status">
+            <span id="apiState" class="badge" data-tone="green">完全オフライン</span>
+            <span id="sessionState" class="badge" data-tone="blue">端末保存</span>
+            <span id="queueState" class="badge" data-tone="amber">問題 0</span>
+          </div>
         </div>
       </div>
-      <div class="toolbar">
+      <div class="top-actions">
         <button id="startBtn" class="primary" type="button">学習開始</button>
         <button id="refreshBtn" type="button">保存</button>
-        <button id="logoutBtn" type="button">リセット</button>
+        <button id="logoutBtn" class="ghost-danger" type="button">リセット</button>
       </div>
     </header>
 
-    <section class="layout">
-      <article class="panel quiz">
-        <div class="meta">
-          <div id="chapter">standby</div>
-          <div class="cluster">
+    <section class="workspace" aria-label="practice workspace">
+      <article class="practice-panel">
+        <div class="panel-top">
+          <div id="chapter" class="chapter-line">standby</div>
+          <div class="meta-cluster">
             <span id="difficulty" class="badge">-</span>
             <span id="reason" class="badge" data-tone="amber">standby</span>
             <span id="score" class="badge" data-tone="green">0 / 0</span>
           </div>
         </div>
-        <div id="loadingBar" class="loading"><span></span></div>
-        <div class="question">
-          <h2 id="question">問題データを読み込み中です。</h2>
-          <div id="choices"></div>
+
+        <div id="loadingBar" class="loading" hidden><span></span></div>
+
+        <div class="question-stage">
+          <div class="question-copy">
+            <p class="eyebrow">Question</p>
+            <h2 id="question">問題データを読み込み中です。</h2>
+          </div>
+          <div id="choices" class="choice-grid"></div>
         </div>
-        <div class="feedback">
-          <p id="result" aria-live="polite">この端末だけで学習履歴を保存します。</p>
-          <div class="actions">
+
+        <div class="feedback-panel">
+          <div class="feedback-copy">
+            <p id="result" aria-live="polite">準備中</p>
+          </div>
+          <div class="feedback-actions">
             <button id="syncBtn" type="button">保存</button>
-            <button id="nextBtn" type="button" disabled>次の問題</button>
+            <button id="nextBtn" class="primary" type="button" disabled>次の問題</button>
           </div>
         </div>
       </article>
 
-      <aside class="side">
-        <section class="panel">
-          <div class="head"><strong>成績</strong><span id="total" class="badge">回答 0</span></div>
-          <div class="stats">
-            <div class="stat"><span class="label">正答率</span><span id="accuracy" class="value">0%</span></div>
-            <div class="stat"><span class="label">連続正解</span><span id="streak" class="value">0</span></div>
-            <div class="stat"><span class="label">正解</span><span id="correctTotal" class="value">0</span></div>
-            <div class="stat"><span class="label">回答</span><span id="answerTotal" class="value">0</span></div>
-            <div class="stat"><span class="label">復習待ち</span><span id="dueNow" class="value">0</span></div>
-            <div class="stat"><span class="label">追跡項目</span><span id="trackedItems" class="value">0</span></div>
+      <aside class="side-stack">
+        <section class="insight-panel">
+          <div class="section-head">
+            <strong>Performance</strong>
+            <span id="total" class="badge">回答 0</span>
+          </div>
+          <div class="metric-grid">
+            <div class="metric"><span class="metric-label">正答率</span><span id="accuracy" class="metric-value">0%</span></div>
+            <div class="metric"><span class="metric-label">連続正解</span><span id="streak" class="metric-value">0</span></div>
+            <div class="metric"><span class="metric-label">正解</span><span id="correctTotal" class="metric-value">0</span></div>
+            <div class="metric"><span class="metric-label">回答</span><span id="answerTotal" class="metric-value">0</span></div>
+            <div class="metric"><span class="metric-label">復習待ち</span><span id="dueNow" class="metric-value">0</span></div>
+            <div class="metric"><span class="metric-label">追跡項目</span><span id="trackedItems" class="metric-value">0</span></div>
           </div>
         </section>
 
-        <section class="panel">
-          <div class="head"><strong>学習設定</strong><span id="requestState" class="badge">local</span></div>
-          <div class="body">
+        <section class="insight-panel">
+          <div class="section-head">
+            <strong>Learning Mode</strong>
+            <span id="requestState" class="badge">local</span>
+          </div>
+          <div class="panel-body">
             <select id="policySelect" aria-label="learning policy">
               <option value="adaptive_mastery_v2">adaptive_mastery_v2</option>
               <option value="chapter_balanced_v1">chapter_balanced_v1</option>
@@ -509,159 +826,23 @@
             <button id="exportBtn" type="button">エクスポート</button>
             <button id="importBtn" type="button">インポート</button>
             <input id="importFile" type="file" accept="application/json" />
-            <div id="authState" class="status" aria-live="polite">ローカル学習プロファイル</div>
+            <div id="authState" class="status" aria-live="polite">ローカルプロファイル</div>
           </div>
         </section>
 
-        <section class="panel">
-          <div class="head"><strong>弱点マップ</strong></div>
-          <div id="masteryList" class="body"><div class="empty">データ待機中</div></div>
+        <section class="insight-panel">
+          <div class="section-head"><strong>Weak Map</strong></div>
+          <div id="masteryList" class="panel-body"><div class="empty">データ待機中</div></div>
         </section>
 
-        <section class="panel">
-          <div class="head"><strong>直近</strong></div>
-          <div id="timeline" class="body"><div class="empty">履歴なし</div></div>
+        <section class="insight-panel">
+          <div class="section-head"><strong>Recent</strong></div>
+          <div id="timeline" class="panel-body"><div class="empty">履歴なし</div></div>
         </section>
       </aside>
     </section>
   </main>
 
   <script src="./offline-app.js"></script>
-=======
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>G検定クイズ v2</title>
-  <style>
-    body{font-family:system-ui,-apple-system,sans-serif;max-width:760px;margin:2rem auto;padding:0 1rem;background:#f8fafc;color:#0f172a}
-    .card{background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:1rem;box-shadow:0 6px 18px rgba(15,23,42,.06)}
-    .choice{display:block;width:100%;margin:.5rem 0;padding:.85rem;border:1px solid #cbd5e1;border-radius:10px;text-align:left;background:#fff;cursor:pointer}
-    .choice:hover{background:#f1f5f9}
-    .row{display:flex;justify-content:space-between;align-items:center;gap:.5rem;flex-wrap:wrap}
-    .pill{padding:.25rem .6rem;border:1px solid #cbd5e1;border-radius:999px;font-size:.8rem;color:#334155}
-    #result{white-space:pre-wrap;line-height:1.6}
-    #nextBtn{margin-top:1rem;padding:.7rem 1rem;border:none;background:#2563eb;color:#fff;border-radius:10px;cursor:pointer}
-    #authForm{display:flex;gap:.5rem;align-items:center;margin-bottom:1rem}
-    #username{padding:.5rem;border:1px solid #cbd5e1;border-radius:8px}
-  </style>
-</head>
-<body>
-  <div class="row"><h1>G検定クイズ v2</h1><span id="score" class="pill">0 / 0</span><span id="total" class="pill">解答総数: -</span></div>
-  <form id="authForm" class="card">
-    <input id="username" name="username" placeholder="ユーザー名 (3-40文字)" minlength="3" maxlength="40" required />
-    <button type="submit">ログイン/新規登録</button>
-    <span id="authState" class="pill">未認証</span>
-  </form>
-  <div class="card">
-    <p id="chapter" class="pill"></p>
-    <h2 id="question"></h2>
-    <div id="choices"></div>
-    <p id="result"></p>
-    <button id="nextBtn" type="button">次の問題へ</button>
-  </div>
-<script>
-const API = window.API_BASE || 'http://localhost:8000';
-let token = localStorage.getItem('quiz_token') || '';
-let current = null;
-let answered = false;
-let total = 0;
-let correct = 0;
-
-const scoreEl = document.getElementById('score');
-const nextBtn = document.getElementById('nextBtn');
-const totalEl = document.getElementById('total');
-const authState = document.getElementById('authState');
-
-function setScore(){ scoreEl.textContent = `${correct} / ${total}`; }
-function setAuthState(text){ authState.textContent = text; }
-
-async function auth(username){
-  const payload = {username};
-  const headers = {'Content-Type':'application/json'};
-  let r = await fetch(`${API}/auth/login`,{method:'POST',headers,body:JSON.stringify(payload)});
-  if(r.status===404){
-    r = await fetch(`${API}/auth/register`,{method:'POST',headers,body:JSON.stringify(payload)});
-  }
-  if(!r.ok) throw new Error('auth failed');
-  const d = await r.json();
-  token = d.token;
-  localStorage.setItem('quiz_token', token);
-  setAuthState(`認証済み: ${d.username}`);
-}
-
-async function loadStats(){
-  try{
-    const r = await fetch(`${API}/quiz/stats`,{headers:{'Authorization':`Bearer ${token}`}});
-    if(!r.ok) return;
-    const s = await r.json();
-    totalEl.textContent = `解答総数: ${s.user.total_answers}`;
-  }catch(_e){}
-}
-
-async function loadQ(){
-  answered = false;
-  document.getElementById('result').textContent = '';
-  if(!token){ document.getElementById('result').textContent = '先に認証してください。'; return; }
-  const r = await fetch(`${API}/quiz/next`,{headers:{'Authorization':`Bearer ${token}`}});
-  if(!r.ok){ document.getElementById('result').textContent = '問題を読み込めませんでした。'; return; }
-  current = await r.json();
-  document.getElementById('chapter').textContent = `${current.chapter_group} / ${current.chapter_id}`;
-  document.getElementById('question').textContent = current.question;
-  const box = document.getElementById('choices'); box.innerHTML='';
-  current.choices.forEach((c,i)=>{
-    const b=document.createElement('button');
-    b.className='choice';
-    b.textContent=`${String.fromCharCode(65+i)}. ${c}`;
-    b.onclick=()=>answer(i);
-    box.appendChild(b);
-  });
-}
-
-async function answer(i){
- if(answered || !current) return;
- answered = true;
- const r=await fetch(`${API}/quiz/answer`,{method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${token}`},body:JSON.stringify({question_id:current.id,selected_index:i})});
- const d=await r.json();
- if(!r.ok){ document.getElementById('result').textContent = `エラー: ${d.detail || '回答処理に失敗しました。'}`; return; }
- total += 1;
- if(d.correct) correct += 1;
- setScore();
- await loadStats();
- document.getElementById('result').textContent = d.correct
-   ? `✅ 正解\n\n${d.explanation}`
-   : `❌ 不正解（正答 ${'ABCD'[d.correct_index]}）\n\n${d.explanation}`;
-}
-
-document.getElementById('authForm').addEventListener('submit', async (e)=>{
-  e.preventDefault();
-  const username = document.getElementById('username').value.trim();
-  if(!username) return;
-  try{ await auth(username); await loadStats(); await loadQ(); }
-  catch(_e){ setAuthState('認証失敗'); }
-});
-
-nextBtn.addEventListener('click', loadQ);
-setScore();
-if(token){ setAuthState('認証済み'); loadStats(); }
-</script>
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
->>>>>>> theirs
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
 </body>
 </html>

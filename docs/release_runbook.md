@@ -15,11 +15,6 @@
    ```
 
 ## 3. Quality Gates
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
 - Question bank validation:
   ```bash
   python tools/validate_question_bank.py
@@ -47,31 +42,6 @@
 - Non-e2e gate:
   ```bash
   pytest tests/test_question_quality.py tests/test_content_factory.py tests/integration tests/backend tests/frontend -m "not e2e" --cov=gtest_quiz --cov=backend/app --cov-report=term-missing --cov-fail-under=70
-=======
-- Non-e2e gate:
-  ```bash
-  pytest tests/test_question_quality.py tests/integration tests/backend tests/frontend -m "not e2e" --cov=gtest_quiz --cov=backend/app --cov-report=term-missing --cov-fail-under=70
->>>>>>> theirs
-=======
-- Non-e2e gate:
-  ```bash
-  pytest tests/test_question_quality.py tests/integration tests/backend tests/frontend -m "not e2e" --cov=gtest_quiz --cov=backend/app --cov-report=term-missing --cov-fail-under=70
->>>>>>> theirs
-=======
-- Non-e2e gate:
-  ```bash
-  pytest tests/test_question_quality.py tests/integration tests/backend tests/frontend -m "not e2e" --cov=gtest_quiz --cov=backend/app --cov-report=term-missing --cov-fail-under=70
->>>>>>> theirs
-=======
-- Non-e2e gate:
-  ```bash
-  pytest tests/test_question_quality.py tests/integration tests/backend tests/frontend -m "not e2e" --cov=gtest_quiz --cov=backend/app --cov-report=term-missing --cov-fail-under=70
->>>>>>> theirs
-=======
-- Non-e2e gate:
-  ```bash
-  pytest tests/test_question_quality.py tests/integration tests/backend tests/frontend -m "not e2e" --cov=gtest_quiz --cov=backend/app --cov-report=term-missing --cov-fail-under=70
->>>>>>> theirs
   ```
 - E2E gate:
   ```bash
@@ -83,11 +53,6 @@
 2. Create patch tag (`vX.Y.(Z+1)`).
 3. Re-run release workflow.
 
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
 ## 5. Post-release Verification (Static PWA)
 - Publish `frontend/src/` to the static host. For GitHub Pages, run the `Static PWA Pages` workflow and use the workflow output URL.
 - Open the HTTPS URL on iPhone Safari.
@@ -99,40 +64,3 @@
   - `エクスポート` downloads a `gtest_quiz_offline_export_v1` bundle.
   - Reloading while offline still opens the app after first install.
   - `question-bank.json` question count matches `bank/question_bank.jsonl`.
-=======
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
-## 5. Post-release Verification (Backend/Frontend Runtime)
-- API boot check:
-  ```bash
-  ./scripts_run_backend.sh
-  ```
-- Health check:
-  ```bash
-  curl -s http://127.0.0.1:8000/health
-  ```
-- Auth + quiz smoke:
-  1. Open `frontend/src/index.html` in browser (or static host)
-  2. Login/Register with a username
-  3. Fetch one question and submit one answer
-- Verify counters:
-  - `GET /quiz/stats` returns user `total_answers >= 1`
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
->>>>>>> theirs
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs

@@ -1,10 +1,5 @@
 from __future__ import annotations
 
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
 import json
 import sqlite3
 from contextlib import contextmanager
@@ -14,57 +9,15 @@ from typing import Any, Dict, Iterator, List, Optional
 
 from backend.app.experiments import ADAPTIVE_POLICY, normalize_policy_variant
 from backend.app.security import isoformat, token_hash as secure_token_hash, utcnow
-=======
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
 import sqlite3
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict, List, Optional
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
->>>>>>> theirs
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
 
 
 @dataclass
 class Storage:
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
     db_path: str = ".runtime/quiz.db"
-=======
-    db_path: str = "backend/app/quiz.db"
->>>>>>> theirs
-=======
-    db_path: str = "backend/app/quiz.db"
->>>>>>> theirs
-=======
-    db_path: str = "backend/app/quiz.db"
->>>>>>> theirs
-=======
-    db_path: str = "backend/app/quiz.db"
->>>>>>> theirs
-=======
-    db_path: str = "backend/app/quiz.db"
->>>>>>> theirs
 
     def __post_init__(self) -> None:
         Path(self.db_path).parent.mkdir(parents=True, exist_ok=True)
@@ -75,11 +28,6 @@ class Storage:
         conn.row_factory = sqlite3.Row
         return conn
 
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
     @contextmanager
     def _connection(self) -> Iterator[sqlite3.Connection]:
         conn = self._connect()
@@ -94,72 +42,22 @@ class Storage:
 
     def _init_db(self) -> None:
         with self._connection() as conn:
-=======
-    def _init_db(self) -> None:
-        with self._connect() as conn:
->>>>>>> theirs
-=======
-    def _init_db(self) -> None:
-        with self._connect() as conn:
->>>>>>> theirs
-=======
-    def _init_db(self) -> None:
-        with self._connect() as conn:
->>>>>>> theirs
-=======
-    def _init_db(self) -> None:
-        with self._connect() as conn:
->>>>>>> theirs
-=======
-    def _init_db(self) -> None:
-        with self._connect() as conn:
->>>>>>> theirs
             conn.execute(
                 """
                 CREATE TABLE IF NOT EXISTS users (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
                     account_key TEXT UNIQUE NOT NULL,
                     token TEXT UNIQUE NOT NULL,
                     token_hash TEXT UNIQUE,
                     display_name TEXT,
                     auth_provider TEXT DEFAULT 'session',
                     policy_variant TEXT DEFAULT 'adaptive_mastery_v2',
-=======
-                    username TEXT UNIQUE NOT NULL,
-                    token TEXT UNIQUE NOT NULL,
->>>>>>> theirs
-=======
-                    username TEXT UNIQUE NOT NULL,
-                    token TEXT UNIQUE NOT NULL,
->>>>>>> theirs
-=======
-                    username TEXT UNIQUE NOT NULL,
-                    token TEXT UNIQUE NOT NULL,
->>>>>>> theirs
-=======
-                    username TEXT UNIQUE NOT NULL,
-                    token TEXT UNIQUE NOT NULL,
->>>>>>> theirs
-=======
-                    username TEXT UNIQUE NOT NULL,
-                    token TEXT UNIQUE NOT NULL,
->>>>>>> theirs
                     created_at TEXT DEFAULT CURRENT_TIMESTAMP
                 )
                 """
             )
             conn.execute(
                 """
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
                 CREATE TABLE IF NOT EXISTS schema_migrations (
                     version TEXT PRIMARY KEY,
                     applied_at TEXT DEFAULT CURRENT_TIMESTAMP
@@ -181,16 +79,6 @@ class Storage:
             )
             conn.execute(
                 """
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
                 CREATE TABLE IF NOT EXISTS answers (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     user_id INTEGER NOT NULL,
@@ -198,32 +86,12 @@ class Storage:
                     chapter_id TEXT NOT NULL,
                     selected_index INTEGER NOT NULL,
                     correct INTEGER NOT NULL,
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
                     elapsed_ms INTEGER,
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
                     answered_at TEXT DEFAULT CURRENT_TIMESTAMP,
                     FOREIGN KEY(user_id) REFERENCES users(id)
                 )
                 """
             )
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
             conn.execute(
                 """
                 CREATE TABLE IF NOT EXISTS learning_items (
@@ -876,70 +744,6 @@ class Storage:
                 """,
                 (user_id,),
             ).fetchall()
-=======
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
-            conn.execute("CREATE INDEX IF NOT EXISTS idx_answers_user ON answers(user_id)")
-            conn.execute("CREATE INDEX IF NOT EXISTS idx_answers_user_question ON answers(user_id, question_id)")
-            conn.execute("CREATE INDEX IF NOT EXISTS idx_answers_user_chapter ON answers(user_id, chapter_id)")
-
-    def create_user(self, username: str, token: str) -> Dict[str, Any]:
-        with self._connect() as conn:
-            conn.execute("INSERT INTO users(username, token) VALUES(?, ?)", (username, token))
-            row = conn.execute("SELECT id, username, token FROM users WHERE username=?", (username,)).fetchone()
-            return dict(row)
-
-    def get_user_by_username(self, username: str) -> Optional[Dict[str, Any]]:
-        with self._connect() as conn:
-            row = conn.execute("SELECT id, username, token FROM users WHERE username=?", (username,)).fetchone()
-            return dict(row) if row else None
-
-    def rotate_token(self, user_id: int, token: str) -> Dict[str, Any]:
-        with self._connect() as conn:
-            conn.execute("UPDATE users SET token=? WHERE id=?", (token, user_id))
-            row = conn.execute("SELECT id, username, token FROM users WHERE id=?", (user_id,)).fetchone()
-            return dict(row)
-
-    def get_user_by_token(self, token: str) -> Optional[Dict[str, Any]]:
-        with self._connect() as conn:
-            row = conn.execute("SELECT id, username, token FROM users WHERE token=?", (token,)).fetchone()
-            return dict(row) if row else None
-
-    def record_answer(self, user_id: int, question_id: str, chapter_id: str, selected_index: int, correct: bool) -> None:
-        with self._connect() as conn:
-            conn.execute(
-                "INSERT INTO answers(user_id, question_id, chapter_id, selected_index, correct) VALUES(?,?,?,?,?)",
-                (user_id, question_id, chapter_id, selected_index, 1 if correct else 0),
-            )
-
-    def answered_question_ids(self, user_id: int) -> List[str]:
-        with self._connect() as conn:
-            rows = conn.execute("SELECT DISTINCT question_id FROM answers WHERE user_id=?", (user_id,)).fetchall()
-            return [str(r[0]) for r in rows]
-
-    def user_stats(self, user_id: int) -> Dict[str, Any]:
-        with self._connect() as conn:
-            total = conn.execute("SELECT COUNT(*) c FROM answers WHERE user_id=?", (user_id,)).fetchone()["c"]
-            correct = conn.execute("SELECT COUNT(*) c FROM answers WHERE user_id=? AND correct=1", (user_id,)).fetchone()["c"]
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
->>>>>>> theirs
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
             weak = conn.execute(
                 """
                 SELECT chapter_id,
@@ -953,46 +757,16 @@ class Storage:
                 """,
                 (user_id,),
             ).fetchall()
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
             streak = 0
             for row in recent:
                 if int(row["correct"]) == 1:
                     streak += 1
                 else:
                     break
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
             return {
                 "total_answers": int(total),
                 "correct_answers": int(correct),
                 "accuracy": (float(correct) / float(total)) if total else 0.0,
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
                 "current_streak": streak,
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
                 "weak_chapters": [dict(r) for r in weak],
             }

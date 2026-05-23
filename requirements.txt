@@ -18,27 +18,7 @@ toml>=0.10.2
 PyPDF2>=3.0.1
 typing_extensions>=4.10.0
 requests>=2.31.0
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
 
 # Quality gates
 pytest>=8.0.0
 pytest-cov>=5.0.0
-=======
-pydantic>=2.7.0
->>>>>>> theirs
-=======
-pydantic>=2.7.0
->>>>>>> theirs
-=======
-pydantic>=2.7.0
->>>>>>> theirs
-=======
-pydantic>=2.7.0
->>>>>>> theirs
-=======
-pydantic>=2.7.0
->>>>>>> theirs

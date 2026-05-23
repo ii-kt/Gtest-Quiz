@@ -11,29 +11,6 @@ from pydantic import BaseModel
 from gtest_quiz.content_factory import ContentFactory, FactoryConfig, FactoryStats, GeneratedQuestionSpec
 from gtest_quiz.env import get_env, load_dotenv
 from gtest_quiz.meta import MetaManager
-<<<<<<< ours
-=======
-from gtest_quiz.models import Question
-from gtest_quiz.question_bank import load_question_bank
-from gtest_quiz.question_quality import (
-    build_duplicate_index,
-    is_probable_duplicate,
-    validate_generated_question,
-)
-from gtest_quiz.env import get_env, load_dotenv
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
->>>>>>> theirs
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
 
 
 class RefillConfig:

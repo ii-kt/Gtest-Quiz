@@ -6,11 +6,6 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from typing import Any, Dict
 from urllib.parse import urlparse
 
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
 from pydantic import ValidationError
 
 from .content import chapter_catalog, offline_question_pack, question_bank_summary
@@ -26,47 +21,12 @@ from .schemas import (
     QuestionDTO,
     SessionResponse,
     StartSessionRequest,
-=======
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
-from .schemas import (
-    AnswerRequest,
-    AnswerResult,
-    LoginRequest,
-    LoginResponse,
-    QuestionDTO,
-    RegisterRequest,
-    RegisterResponse,
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
->>>>>>> theirs
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
 )
 from .services import (
     InvalidAnswerIndexError,
     QuestionNotFoundError,
     QuizService,
     UnauthorizedError,
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
 )
 
 
@@ -80,33 +40,8 @@ def _route_path(raw_path: str) -> str:
     if path.startswith(f"{API_PREFIX}/"):
         return path[len(API_PREFIX):]
     return path
-=======
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
-    UserAlreadyExistsError,
-    UserNotFoundError,
-)
 
 service = QuizService()
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
->>>>>>> theirs
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
 
 
 def _extract_token(handler: BaseHTTPRequestHandler) -> str:
@@ -116,11 +51,6 @@ def _extract_token(handler: BaseHTTPRequestHandler) -> str:
     raise UnauthorizedError("missing bearer token")
 
 
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
 def _begin_request(handler: BaseHTTPRequestHandler, service: QuizService, method: str) -> None:
     handler._request_id = handler.headers.get("X-Request-ID") or new_request_id()  # type: ignore[attr-defined]
     handler._request_started_ms = monotonic_ms()  # type: ignore[attr-defined]
@@ -129,31 +59,11 @@ def _begin_request(handler: BaseHTTPRequestHandler, service: QuizService, method
 
 
 def _json_response(handler: BaseHTTPRequestHandler, status: int, body: Any) -> None:
-=======
-def _json_response(handler: BaseHTTPRequestHandler, status: int, body: Dict[str, Any]) -> None:
->>>>>>> theirs
-=======
-def _json_response(handler: BaseHTTPRequestHandler, status: int, body: Dict[str, Any]) -> None:
->>>>>>> theirs
-=======
-def _json_response(handler: BaseHTTPRequestHandler, status: int, body: Dict[str, Any]) -> None:
->>>>>>> theirs
-=======
-def _json_response(handler: BaseHTTPRequestHandler, status: int, body: Dict[str, Any]) -> None:
->>>>>>> theirs
-=======
-def _json_response(handler: BaseHTTPRequestHandler, status: int, body: Dict[str, Any]) -> None:
->>>>>>> theirs
     raw = json.dumps(body, ensure_ascii=False).encode("utf-8")
     handler.send_response(status)
     handler.send_header("Content-Type", "application/json; charset=utf-8")
     handler.send_header("Content-Length", str(len(raw)))
     handler.send_header("Access-Control-Allow-Origin", "*")
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
     request_id = getattr(handler, "_request_id", new_request_id())
     handler.send_header("X-Request-ID", request_id)
     handler.end_headers()
@@ -341,116 +251,6 @@ def run(host: str = "127.0.0.1", port: int = 8000) -> None:
         host = configured_host(host)
     if port == 8000:
         port = configured_port(port)
-=======
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
-    handler.end_headers()
-    handler.wfile.write(raw)
-
-
-class QuizHTTPRequestHandler(BaseHTTPRequestHandler):
-    def log_message(self, format: str, *args: Any) -> None:  # noqa: A003
-        return
-
-    def do_OPTIONS(self) -> None:  # noqa: N802
-        self.send_response(HTTPStatus.NO_CONTENT)
-        self.send_header("Access-Control-Allow-Origin", "*")
-        self.send_header("Access-Control-Allow-Methods", "GET,POST,OPTIONS")
-        self.send_header("Access-Control-Allow-Headers", "Content-Type, Authorization")
-        self.end_headers()
-
-    def do_GET(self) -> None:  # noqa: N802
-        path = urlparse(self.path).path
-        if path == "/health":
-            return _json_response(self, HTTPStatus.OK, {"status": "ok"})
-
-        try:
-            token = _extract_token(self)
-            user = service.user_from_token(token)
-        except UnauthorizedError as e:
-            return _json_response(self, HTTPStatus.UNAUTHORIZED, {"detail": str(e)})
-
-        if path == "/quiz/next":
-            q = service.next_question(user["id"])
-            if q is None:
-                return _json_response(self, HTTPStatus.NOT_FOUND, {"detail": "No question available"})
-            return _json_response(self, HTTPStatus.OK, QuestionDTO(**q.to_dict()).model_dump())
-
-        if path == "/quiz/stats":
-            return _json_response(self, HTTPStatus.OK, service.stats(user["id"]))
-
-        return _json_response(self, HTTPStatus.NOT_FOUND, {"detail": "Not Found"})
-
-    def do_POST(self) -> None:  # noqa: N802
-        path = urlparse(self.path).path
-        length = int(self.headers.get("Content-Length", "0"))
-        payload = self.rfile.read(length) if length > 0 else b"{}"
-
-        if path == "/auth/register":
-            try:
-                data = RegisterRequest(**json.loads(payload.decode("utf-8")))
-                created = service.register(data.username)
-                return _json_response(self, HTTPStatus.CREATED, RegisterResponse(**created).model_dump())
-            except UserAlreadyExistsError as e:
-                return _json_response(self, HTTPStatus.CONFLICT, {"detail": str(e)})
-            except Exception as e:  # noqa: BLE001
-                return _json_response(self, HTTPStatus.BAD_REQUEST, {"detail": f"Invalid request: {e}"})
-
-        if path == "/auth/login":
-            try:
-                data = LoginRequest(**json.loads(payload.decode("utf-8")))
-                created = service.login(data.username)
-                return _json_response(self, HTTPStatus.OK, LoginResponse(**created).model_dump())
-            except UserNotFoundError as e:
-                return _json_response(self, HTTPStatus.NOT_FOUND, {"detail": str(e)})
-            except Exception as e:  # noqa: BLE001
-                return _json_response(self, HTTPStatus.BAD_REQUEST, {"detail": f"Invalid request: {e}"})
-
-        try:
-            token = _extract_token(self)
-            user = service.user_from_token(token)
-        except UnauthorizedError as e:
-            return _json_response(self, HTTPStatus.UNAUTHORIZED, {"detail": str(e)})
-
-        if path != "/quiz/answer":
-            return _json_response(self, HTTPStatus.NOT_FOUND, {"detail": "Not Found"})
-
-        try:
-            req = AnswerRequest(**json.loads(payload.decode("utf-8")))
-            result = service.answer(user["id"], req.question_id, req.selected_index)
-            return _json_response(self, HTTPStatus.OK, AnswerResult(**result).model_dump())
-        except InvalidAnswerIndexError as e:
-            return _json_response(self, HTTPStatus.BAD_REQUEST, {"detail": str(e)})
-        except QuestionNotFoundError as e:
-            return _json_response(self, HTTPStatus.NOT_FOUND, {"detail": str(e)})
-        except Exception as e:  # noqa: BLE001
-            return _json_response(self, HTTPStatus.BAD_REQUEST, {"detail": f"Invalid request: {e}"})
-
-
-def create_server(host: str = "127.0.0.1", port: int = 8000) -> ThreadingHTTPServer:
-    return ThreadingHTTPServer((host, port), QuizHTTPRequestHandler)
-
-
-def run(host: str = "127.0.0.1", port: int = 8000) -> None:
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
->>>>>>> theirs
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
     server = create_server(host=host, port=port)
     print(f"Quiz API server started: http://{host}:{port}")
     server.serve_forever()

@@ -1,28 +1,8 @@
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
 import json
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
 from pathlib import Path
 
 
 def test_frontend_page_exists():
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
     html = Path("frontend/src/index.html")
     assert html.exists()
     text = html.read_text(encoding="utf-8")
@@ -32,6 +12,11 @@ def test_frontend_page_exists():
     assert "./pwa-icon-180.png" in text
     assert "apple-mobile-web-app-capable" in text
     assert "完全オフライン" in text
+    assert "Performance" in text
+    assert "Learning Mode" in text
+    assert "@container" in text
+    assert "@layer" in text
+    assert "backdrop-filter" in text
     assert "startBtn" in text
     assert "nextBtn" in text
     assert "apiState" in text
@@ -40,6 +25,7 @@ def test_frontend_page_exists():
     assert "placeholder" not in text
     assert "ユーザー名" not in text
     assert "パスワード" not in text
+    assert "authForm" not in text
 
 
 def test_frontend_is_static_offline_first():
@@ -49,6 +35,8 @@ def test_frontend_is_static_offline_first():
     assert "http://localhost" not in script
     assert "/api/v1" not in html
     assert "/api/v1" not in script
+    assert "/auth/login" not in html
+    assert "/auth/register" not in html
     assert "STATIC_BANK_URL" in script
     assert "./question-bank.json" in script
     assert "localStorage" in script
@@ -91,43 +79,3 @@ def test_frontend_pwa_assets_exist():
     assert "./offline-app.js" in worker_text
     assert "./question-bank.json" in worker_text
     assert "cacheFirst" in worker_text
-=======
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
-    html = Path('frontend/src/index.html')
-    assert html.exists()
-    text = html.read_text(encoding='utf-8')
-    assert 'G検定クイズ v2' in text
-    assert '/quiz/next' in text
-    assert '/quiz/answer' in text
-    assert '/quiz/stats' in text
-    assert '/auth/register' in text
-    assert '/auth/login' in text
-    assert 'authForm' in text
-    assert 'nextBtn' in text
-
-
-def test_frontend_has_error_handling_text():
-    text = Path('frontend/src/index.html').read_text(encoding='utf-8')
-    assert '問題を読み込めませんでした。' in text
-    assert '回答処理に失敗しました。' in text
-    assert '先に認証してください。' in text
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
->>>>>>> theirs
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs

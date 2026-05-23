@@ -25,11 +25,6 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
 
       - name: Validate question bank
         run: |
@@ -54,33 +49,6 @@ jobs:
       - name: Check release readiness rubric
         run: |
           python tools/release_readiness.py
-=======
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
-          pip install pytest pytest-cov
-
-      - name: Run unit + integration + backend + frontend tests
-        run: |
-          pytest tests/test_question_quality.py tests/integration tests/backend tests/frontend -m "not e2e" --cov=gtest_quiz --cov=backend/app --cov-report=term-missing --cov-fail-under=70
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
->>>>>>> theirs
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
 
       - name: Run e2e smoke
         run: |

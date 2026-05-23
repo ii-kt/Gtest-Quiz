@@ -3,22 +3,7 @@ __pycache__/
 .pytest_cache/
 
 # Local runtime artifacts
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
 .runtime/
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
 backend/app/*.db
 backend/app/test_*.db
 

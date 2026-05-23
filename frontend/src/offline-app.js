@@ -20,7 +20,7 @@ const reasonLabels = {
   weak_chapter: '弱点',
   review_due: '復習',
   balanced_practice: '調整',
-  baseline_random: 'random',
+  baseline_random: 'Random',
   chapter_balance: '章バランス',
 };
 
@@ -109,7 +109,7 @@ function ensureLearner() {
     persistState();
   }
   sessionState.textContent = state.learnerId;
-  authState.textContent = 'ローカル学習プロファイル';
+  authState.textContent = 'ローカルプロファイル';
 }
 
 function nowIso() {
@@ -502,7 +502,7 @@ function renderQuestion(selection) {
     choicesEl.appendChild(button);
   });
   startedAt = performance.now();
-  resultEl.textContent = '選択肢を選んでください。';
+  resultEl.textContent = '回答待機中';
   nextBtn.disabled = true;
 }
 

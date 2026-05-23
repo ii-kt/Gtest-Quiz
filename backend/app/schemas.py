@@ -1,8 +1,3 @@
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
 from typing import Any, Dict, List, Literal, Optional
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -13,34 +8,6 @@ class APIModel(BaseModel):
 
 
 class QuestionDTO(APIModel):
-=======
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
-from typing import List
-
-from pydantic import BaseModel, Field
-
-
-class QuestionDTO(BaseModel):
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
->>>>>>> theirs
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
     id: str
     domain: str
     chapter_group: str
@@ -48,11 +15,6 @@ class QuestionDTO(BaseModel):
     difficulty: str
     question: str
     choices: List[str] = Field(min_length=4, max_length=4)
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
     learning: Dict[str, Any] = Field(default_factory=dict)
 
 
@@ -110,56 +72,3 @@ class PolicyPreferenceRequest(APIModel):
 class PolicyPreferenceResponse(APIModel):
     policy_variant: str
     experiment: Dict[str, Any]
-=======
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
-    correct_index: int
-    explanation: str
-
-
-class AnswerRequest(BaseModel):
-    question_id: str
-    selected_index: int
-
-
-class AnswerResult(BaseModel):
-    correct: bool
-    correct_index: int
-    explanation: str
-
-
-class RegisterRequest(BaseModel):
-    username: str = Field(min_length=3, max_length=40)
-
-
-class RegisterResponse(BaseModel):
-    username: str
-    token: str
-
-
-class LoginRequest(BaseModel):
-    username: str = Field(min_length=3, max_length=40)
-
-
-class LoginResponse(BaseModel):
-    username: str
-    token: str
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
->>>>>>> theirs
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
