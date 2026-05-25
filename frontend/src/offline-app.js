@@ -44,7 +44,6 @@ const policySelect = el('policySelect');
 const loadingBar = el('loadingBar');
 const scoreEl = el('score');
 const apiState = el('apiState');
-const sessionState = el('sessionState');
 const queueState = el('queueState');
 const requestState = el('requestState');
 const authState = el('authState');
@@ -66,8 +65,6 @@ const timeline = el('timeline');
 
 function defaultState() {
   return {
-    learnerId: '',
-    createdAt: '',
     policyVariant: 'adaptive_mastery_v2',
     answers: [],
     learningItems: {},
@@ -75,18 +72,20 @@ function defaultState() {
   };
 }
 
+function normalizeState(source = {}) {
+  return {
+    policyVariant: policies.includes(source.policyVariant) ? source.policyVariant : 'adaptive_mastery_v2',
+    answers: Array.isArray(source.answers) ? source.answers : [],
+    learningItems: source.learningItems && typeof source.learningItems === 'object' ? source.learningItems : {},
+    recent: Array.isArray(source.recent) ? source.recent : [],
+  };
+}
+
 function loadState() {
   try {
     const parsed = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
     if (!parsed || typeof parsed !== 'object') return defaultState();
-    return {
-      ...defaultState(),
-      ...parsed,
-      policyVariant: policies.includes(parsed.policyVariant) ? parsed.policyVariant : 'adaptive_mastery_v2',
-      answers: Array.isArray(parsed.answers) ? parsed.answers : [],
-      learningItems: parsed.learningItems && typeof parsed.learningItems === 'object' ? parsed.learningItems : {},
-      recent: Array.isArray(parsed.recent) ? parsed.recent : [],
-    };
+    return normalizeState(parsed);
   } catch (_error) {
     return defaultState();
   }
@@ -94,22 +93,7 @@ function loadState() {
 
 function persistState() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-  requestState.textContent = `saved ${new Date().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })}`;
-}
-
-function newLearnerId() {
-  if (crypto.randomUUID) return `L-${crypto.randomUUID().slice(0, 8)}`;
-  return `L-${Date.now().toString(36)}-${Math.random().toString(16).slice(2, 6)}`;
-}
-
-function ensureLearner() {
-  if (!state.learnerId) {
-    state.learnerId = newLearnerId();
-    state.createdAt = nowIso();
-    persistState();
-  }
-  sessionState.textContent = state.learnerId;
-  authState.textContent = 'ローカルプロファイル';
+  requestState.textContent = `保存 ${new Date().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })}`;
 }
 
 function nowIso() {
@@ -545,7 +529,6 @@ function answer(index) {
 }
 
 function startLearning() {
-  ensureLearner();
   policySelect.value = state.policyVariant;
   const selection = selectNextQuestion();
   if (!selection) {
@@ -584,7 +567,6 @@ async function loadQuestionBank() {
 }
 
 function saveLocalState() {
-  ensureLearner();
   persistState();
   renderStats();
   renderTimeline();
@@ -605,7 +587,6 @@ function resetState() {
 }
 
 function exportAccount() {
-  ensureLearner();
   const bundle = {
     schema_version: 'gtest_quiz_offline_export_v1',
     exported_at: nowIso(),
@@ -623,8 +604,9 @@ async function importAccount(file) {
   if (!file) return;
   const payload = JSON.parse(await file.text());
   if (payload.schema_version === 'gtest_quiz_offline_export_v1' && payload.state) {
-    state = { ...defaultState(), ...payload.state };
+    state = normalizeState(payload.state);
   } else {
+    state = defaultState();
     const importedAnswers = Array.isArray(payload.answers) ? payload.answers : [];
     const importedItems = Array.isArray(payload.learning_items) ? payload.learning_items : [];
     state.answers = importedAnswers.map(normalizeImportedAnswer).filter(Boolean);
@@ -632,7 +614,6 @@ async function importAccount(file) {
     state.recent = state.answers.slice(-20).reverse().map((item) => ({ correct: item.correct, label: item.chapter_id, answered_at: item.answered_at }));
   }
   state.policyVariant = policies.includes(state.policyVariant) ? state.policyVariant : 'adaptive_mastery_v2';
-  ensureLearner();
   persistState();
   policySelect.value = state.policyVariant;
   renderStats();

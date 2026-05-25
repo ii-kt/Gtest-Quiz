@@ -12,8 +12,8 @@ def test_frontend_page_exists():
     assert "./pwa-icon-180.png" in text
     assert "apple-mobile-web-app-capable" in text
     assert "完全オフライン" in text
-    assert "Performance" in text
-    assert "Learning Mode" in text
+    assert "学習状況" in text
+    assert "出題モード" in text
     assert "@container" in text
     assert "@layer" in text
     assert "backdrop-filter" in text
@@ -26,6 +26,7 @@ def test_frontend_page_exists():
     assert "ユーザー名" not in text
     assert "パスワード" not in text
     assert "authForm" not in text
+    assert "sessionState" not in text
 
 
 def test_frontend_is_static_offline_first():
@@ -44,6 +45,8 @@ def test_frontend_is_static_offline_first():
     assert "updateSchedule" in script
     assert "exportAccount" in script
     assert "importAccount" in script
+    assert "learnerId" not in script
+    assert "ensureLearner" not in script
 
 
 def test_static_question_bank_asset_matches_source_bank():
@@ -75,7 +78,7 @@ def test_frontend_pwa_assets_exist():
 
     worker_text = worker.read_text(encoding="utf-8")
     assert "CACHE_NAME" in worker_text
-    assert "gtest-quiz-static-v2" in worker_text
+    assert "gtest-quiz-static-v3" in worker_text
     assert "./offline-app.js" in worker_text
     assert "./question-bank.json" in worker_text
     assert "cacheFirst" in worker_text
