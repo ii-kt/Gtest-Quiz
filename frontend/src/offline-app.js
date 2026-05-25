@@ -65,6 +65,8 @@ const timeline = el('timeline');
 
 function defaultState() {
   return {
+    bankVersion: '',
+    bankResetNoticeSeen: false,
     policyVariant: 'adaptive_mastery_v2',
     answers: [],
     learningItems: {},
@@ -74,6 +76,8 @@ function defaultState() {
 
 function normalizeState(source = {}) {
   return {
+    bankVersion: typeof source.bankVersion === 'string' ? source.bankVersion : '',
+    bankResetNoticeSeen: Boolean(source.bankResetNoticeSeen),
     policyVariant: policies.includes(source.policyVariant) ? source.policyVariant : 'adaptive_mastery_v2',
     answers: Array.isArray(source.answers) ? source.answers : [],
     learningItems: source.learningItems && typeof source.learningItems === 'object' ? source.learningItems : {},
@@ -94,6 +98,34 @@ function loadState() {
 function persistState() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
   requestState.textContent = `saved ${new Date().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })}`;
+}
+
+function currentBankVersion() {
+  return String(bankMeta.bank_version || '').trim();
+}
+
+function stateForBankVersion(bankVersion) {
+  return {
+    ...defaultState(),
+    bankVersion,
+    bankResetNoticeSeen: false,
+  };
+}
+
+function applyBankVersionMigration() {
+  const bankVersion = currentBankVersion();
+  if (!bankVersion) return false;
+  if (state.bankVersion === bankVersion) return false;
+  state = stateForBankVersion(bankVersion);
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  return true;
+}
+
+function showBankResetNotice() {
+  if (state.bankResetNoticeSeen) return;
+  resultEl.textContent = '問題バンクが更新されたため、旧学習履歴を初期化しました。';
+  state.bankResetNoticeSeen = true;
+  persistState();
 }
 
 function nowIso() {
@@ -550,12 +582,21 @@ async function loadQuestionBank() {
     const payload = await response.json();
     bank = Array.isArray(payload) ? payload : payload.questions || [];
     bankMeta = Array.isArray(payload) ? {} : payload.meta || {};
-    if (!bank.length) throw new Error('empty bank');
+    const resetPerformed = applyBankVersionMigration();
     apiState.textContent = '完全オフライン';
     apiState.dataset.tone = 'green';
     queueState.textContent = `問題 ${bank.length}`;
-    authState.textContent = `問題バンク ${bankMeta.generated_at ? bankMeta.generated_at.slice(0, 10) : 'ready'}`;
+    authState.textContent = `問題バンク ${currentBankVersion() || (bankMeta.generated_at ? bankMeta.generated_at.slice(0, 10) : 'ready')}`;
+    if (!bank.length) {
+      questionEl.textContent = '新世代問題バンクの初期生成待ちです。';
+      resultEl.textContent = 'GitHub Actionsのreset_and_seedを実行すると、Gemini 3.5 Flash生成問題がここに表示されます。';
+      renderStats();
+      renderTimeline();
+      if (resetPerformed) showBankResetNotice();
+      return;
+    }
     startLearning();
+    if (resetPerformed) showBankResetNotice();
   } catch (error) {
     apiState.textContent = '読込失敗';
     apiState.dataset.tone = 'red';
@@ -575,7 +616,7 @@ function saveLocalState() {
 
 function resetState() {
   if (!confirm('この端末の学習履歴をリセットします。')) return;
-  state = defaultState();
+  state = stateForBankVersion(currentBankVersion());
   localStorage.removeItem(STORAGE_KEY);
   current = null;
   answered = false;
@@ -589,6 +630,7 @@ function resetState() {
 function exportAccount() {
   const bundle = {
     schema_version: 'gtest_quiz_offline_export_v1',
+    bank_version: currentBankVersion(),
     exported_at: nowIso(),
     state,
   };
@@ -604,9 +646,15 @@ async function importAccount(file) {
   if (!file) return;
   const payload = JSON.parse(await file.text());
   if (payload.schema_version === 'gtest_quiz_offline_export_v1' && payload.state) {
-    state = normalizeState(payload.state);
+    if (payload.bank_version && payload.bank_version !== currentBankVersion()) {
+      state = stateForBankVersion(currentBankVersion());
+      resultEl.textContent = '問題バンクの世代が異なるため、インポートした旧学習履歴は破棄しました。';
+    } else {
+      state = normalizeState(payload.state);
+      state.bankVersion = currentBankVersion();
+    }
   } else {
-    state = defaultState();
+    state = stateForBankVersion(currentBankVersion());
     const importedAnswers = Array.isArray(payload.answers) ? payload.answers : [];
     const importedItems = Array.isArray(payload.learning_items) ? payload.learning_items : [];
     state.answers = importedAnswers.map(normalizeImportedAnswer).filter(Boolean);

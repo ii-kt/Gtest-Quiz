@@ -40,7 +40,9 @@ Gemini-backed run:
 python tools/auto_refill_quality.py
 ```
 
-The scheduled GitHub Actions job runs once per day at `17 0 * * *` and uses `target_daily=5`. The model is explicitly fixed to `gemini-2.5-flash-lite` for text question generation. Do not use "latest model" discovery for automated refill jobs.
+The scheduled GitHub Actions job runs once per day at `17 0 * * *` and uses `DAILY_TARGET=50` by default. Manual dispatch supports `reset_and_seed`, `seed`, `daily`, and `replace`. The default text generation model is `gemini-3.5-flash`; `GEMINI_MODEL` may override it explicitly, but there is no implicit fallback to older models.
+
+The active bank epoch is `gemini35_v1`. Old seed questions are removed from the active bank, and generated records must carry `bank_version`, `provenance.model`, and `provenance.bank_version`.
 
 Review queue summary:
 

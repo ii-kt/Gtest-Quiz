@@ -5,6 +5,7 @@ import pytest
 from backend.app.experiments import ADAPTIVE_POLICY, CHAPTER_BALANCED_POLICY
 from backend.app.services import QuizService, UnauthorizedError
 from gtest_quiz.question_bank import get_question_by_id
+from tests.bank_fixture import install_temp_question_bank
 
 
 def test_session_refresh_revokes_previous_token_and_policy_can_be_changed(tmp_path):
@@ -31,7 +32,8 @@ def test_session_refresh_revokes_previous_token_and_policy_can_be_changed(tmp_pa
         service.user_from_token(refreshed["token"])
 
 
-def test_account_import_recomputes_correctness_audit_and_metrics(tmp_path):
+def test_account_import_recomputes_correctness_audit_and_metrics(tmp_path, monkeypatch):
+    install_temp_question_bank(monkeypatch, tmp_path)
     service = QuizService(db_path=str(tmp_path / "quiz.db"), meta_path=str(tmp_path / "meta.json"))
     created = service.start_session()
     user = service.user_from_token(created["token"])

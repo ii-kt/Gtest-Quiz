@@ -93,7 +93,7 @@ def _has_duplicate_choices(choices: Sequence[str]) -> bool:
     return len(normalized) != len(set(normalized))
 
 
-def validate_generated_question(data: Dict[str, Any], min_explanation_length: int = 60) -> ValidationResult:
+def validate_generated_question(data: Dict[str, Any], min_explanation_length: int = 120) -> ValidationResult:
     reasons: List[str] = []
     score = 100
 
@@ -136,6 +136,12 @@ def validate_generated_question(data: Dict[str, Any], min_explanation_length: in
     if len(explanation) < min_explanation_length:
         reasons.append("explanation is too short")
         score -= 20
+    if explanation and not any(token in explanation for token in ("正解理由", "正解は", "適切です", "根拠")):
+        reasons.append("explanation should include the reason for the correct answer")
+        score -= 10
+    if explanation and not any(token in explanation for token in ("不正解理由", "他の選択肢", "誤答", "差分")):
+        reasons.append("explanation should distinguish incorrect choices")
+        score -= 10
 
     if difficulty not in {"basic", "standard", "advanced"}:
         reasons.append("difficulty must be basic|standard|advanced")

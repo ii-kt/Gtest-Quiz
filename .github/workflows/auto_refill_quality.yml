@@ -3,7 +3,22 @@ name: Auto Refill Question Bank (Quality Pipeline)
 on:
   schedule:
     - cron: "17 0 * * *"
-  workflow_dispatch: {}
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "Generation mode"
+        required: true
+        default: "daily"
+        type: choice
+        options:
+          - daily
+          - seed
+          - reset_and_seed
+          - replace
+      target:
+        description: "Target accepted questions for this run"
+        required: false
+        default: ""
 
 permissions:
   contents: write
@@ -33,11 +48,24 @@ jobs:
       - name: Run schema-first quality refill
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GEMINI_MODEL: ${{ vars.GEMINI_MODEL || 'gemini-3.5-flash' }}
+          QUESTION_BANK_EPOCH: ${{ vars.QUESTION_BANK_EPOCH || 'gemini35_v1' }}
+          GENERATION_MODE: ${{ github.event_name == 'workflow_dispatch' && inputs.mode || 'daily' }}
+          GENERATION_TARGET: ${{ github.event_name == 'workflow_dispatch' && inputs.target || '' }}
+          DAILY_TARGET: ${{ vars.DAILY_TARGET || '50' }}
+          INITIAL_TARGET_PER_RUN: ${{ vars.INITIAL_TARGET_PER_RUN || '150' }}
+          MAX_RETRY: ${{ vars.MAX_RETRY || '3' }}
+          MIN_EXPLANATION_LENGTH: ${{ vars.MIN_EXPLANATION_LENGTH || '120' }}
+          MAX_RUNTIME_MINUTES: ${{ vars.MAX_RUNTIME_MINUTES || '25' }}
+          RESET_QUESTION_BANK: ${{ github.event_name == 'workflow_dispatch' && inputs.mode == 'reset_and_seed' && 'true' || 'false' }}
           PYTHONPATH: ${{ github.workspace }}
         run: |
-          python tools/auto_refill_quality.py
+          python tools/auto_refill_quality.py --mode "$GENERATION_MODE" --target "$GENERATION_TARGET" | tee refill-result.json
 
       - name: Validate generated content
+        env:
+          GEMINI_MODEL: ${{ vars.GEMINI_MODEL || 'gemini-3.5-flash' }}
+          QUESTION_BANK_EPOCH: ${{ vars.QUESTION_BANK_EPOCH || 'gemini35_v1' }}
         run: |
           python tools/validate_question_bank.py
           python tools/review_generated_queue.py --summary
@@ -53,11 +81,16 @@ jobs:
           git add bank/generated_review_queue.jsonl || true
           git add bank/question_provenance.jsonl || true
           git add frontend/src/question-bank.json || true
+          git add frontend/src/offline-app.js || true
           git add frontend/src/pwa-icon-180.png frontend/src/pwa-icon-192.png frontend/src/pwa-icon-512.png || true
+
+          echo "updated_files=$(git diff --cached --name-only | tr '\n' ' ')"
 
           if git diff --cached --quiet; then
             echo "No generated content changes to commit."
+            echo "commit_created=false"
           else
             git commit -m "chore: quality refill question bank"
             git push
+            echo "commit_created=true"
           fi

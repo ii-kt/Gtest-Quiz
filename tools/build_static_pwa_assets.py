@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import subprocess
 import struct
+import sys
 import zlib
 from datetime import datetime, timezone
 from pathlib import Path
@@ -10,9 +11,24 @@ from typing import Any, Dict, List
 
 
 ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from gtest_quiz.bank_epoch import current_bank_version
+
 BANK_PATH = ROOT / "bank/question_bank.jsonl"
 FRONTEND = ROOT / "frontend/src"
 STATIC_BANK_PATH = FRONTEND / "question-bank.json"
+META_PATH = ROOT / "bank/meta.json"
+
+
+def load_bank_version() -> str:
+    if META_PATH.exists():
+        meta = json.loads(META_PATH.read_text(encoding="utf-8"))
+        version = str(meta.get("bank_version", "")).strip()
+        if version:
+            return version
+    return current_bank_version()
 
 
 def load_questions() -> List[Dict[str, Any]]:
@@ -24,6 +40,7 @@ def load_questions() -> List[Dict[str, Any]]:
         questions.append(
             {
                 "id": row["id"],
+                "bank_version": row.get("bank_version", load_bank_version()),
                 "domain": row.get("domain", ""),
                 "chapter_group": row.get("chapter_group", ""),
                 "chapter_id": row.get("chapter_id", ""),
@@ -40,6 +57,7 @@ def load_questions() -> List[Dict[str, Any]]:
 
 def write_static_bank() -> int:
     questions = load_questions()
+    bank_version = load_bank_version()
     git_commit = subprocess.run(
         ["git", "rev-parse", "--short", "HEAD"],
         cwd=ROOT,
@@ -54,6 +72,7 @@ def write_static_bank() -> int:
             "git_commit": git_commit,
             "source": "bank/question_bank.jsonl",
             "question_count": len(questions),
+            "bank_version": bank_version,
         },
         "questions": questions,
     }

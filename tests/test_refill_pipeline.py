@@ -11,14 +11,27 @@ def test_safe_parse_json_accepts_wrapped_model_text():
 
 
 def test_refill_stats_wrap_factory_stats():
-    factory_stats = FactoryStats(generated=3, accepted=2, queued_for_review=1, rejected=4, duplicates=5, errors=6)
-    stats = RefillStats.from_factory(factory_stats)
+    factory_stats = FactoryStats(
+        generated=3,
+        accepted=2,
+        queued_for_review=1,
+        rejected=4,
+        duplicates=5,
+        errors=6,
+        api_call_count=7,
+        rate_limit_errors=1,
+    )
+    stats = RefillStats.from_factory(factory_stats, config=RefillConfig(mode="daily"))
     assert stats.generated == 3
     assert stats.accepted == 2
     assert stats.queued_for_review == 1
     assert stats.rejected == 4
     assert stats.duplicates == 5
     assert stats.errors == 6
+    assert stats.api_call_count == 7
+    assert stats.rate_limit_errors == 1
+    assert stats.model_name == "gemini-3.5-flash"
+    assert stats.bank_version == "gemini35_v1"
 
 
 def test_run_refill_stops_before_generation_when_quota_is_near(monkeypatch):

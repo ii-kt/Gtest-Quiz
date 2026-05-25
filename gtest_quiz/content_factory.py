@@ -10,6 +10,7 @@ from typing import Any, Dict, Iterable, List, Optional, Protocol
 
 from pydantic import BaseModel, Field
 
+from gtest_quiz.bank_epoch import DEFAULT_GEMINI_MODEL, DEFAULT_QUESTION_BANK_EPOCH
 from gtest_quiz.meta import MetaManager
 from gtest_quiz.models import Question
 from gtest_quiz.question_bank import load_question_bank
@@ -21,7 +22,7 @@ from gtest_quiz.question_quality import (
 )
 
 
-PROMPT_VERSION = "gtest_factory_v3_2026-05-21"
+PROMPT_VERSION = "gtest_factory_gemini35_v1_2026-05-26"
 QUESTION_BANK_PATH = Path("bank/question_bank.jsonl")
 REVIEW_QUEUE_PATH = Path("bank/generated_review_queue.jsonl")
 PROVENANCE_PATH = Path("bank/question_provenance.jsonl")
@@ -32,7 +33,7 @@ class GeneratedQuestionSpec(BaseModel):
     question: str = Field(min_length=18)
     choices: List[str] = Field(min_length=4, max_length=4)
     correct_index: int = Field(ge=0, le=3)
-    explanation: str = Field(min_length=60)
+    explanation: str = Field(min_length=120)
     difficulty: str = Field(pattern="^(basic|standard|advanced)$")
     syllabus_node: str = Field(min_length=1)
     concepts: List[str] = Field(default_factory=list)
@@ -46,14 +47,17 @@ class QuestionGenerator(Protocol):
 
 @dataclass(frozen=True)
 class FactoryConfig:
-    model_name: str = "gemini-2.5-flash-lite"
+    model_name: str = DEFAULT_GEMINI_MODEL
     prompt_version: str = PROMPT_VERSION
     target_accepts: int = 80
-    min_explanation_length: int = 80
+    min_explanation_length: int = 120
     review_threshold: int = 75
     max_attempts_per_target: int = 3
     per_chapter_floor: int = 10
     allow_over_floor_growth: bool = True
+    bank_version: str = DEFAULT_QUESTION_BANK_EPOCH
+    mode: str = "daily"
+    max_runtime_minutes: int = 25
     question_bank_path: Path = QUESTION_BANK_PATH
     review_queue_path: Path = REVIEW_QUEUE_PATH
     provenance_path: Path = PROVENANCE_PATH
@@ -68,6 +72,8 @@ class FactoryStats:
     duplicates: int = 0
     errors: int = 0
     targets: int = 0
+    api_call_count: int = 0
+    rate_limit_errors: int = 0
 
 
 @dataclass(frozen=True)
@@ -111,11 +117,13 @@ prompt_version: {prompt_version}
 - 受験者の理解度を測る高品質な4択問題を1問作る
 - 暗記だけでなく概念の違い、実務上の判断、代表的な落とし穴を問う
 - 誤答はもっともらしいが、解説で明確に区別できるものにする
+- 単純な用語暗記ではなく、概念理解・比較・適用判断を問う
 
 出力制約:
 - response_schema に完全準拠
 - 正解は1つ
-- explanation は根拠と誤答との差分を含める
+- explanation は120文字以上
+- explanation は「正解理由」と「不正解理由」または誤答との差分を含める
 - syllabus_node には対象項目名を入れる
 
 対象大分類: {target.chapter_group}
@@ -245,8 +253,9 @@ def to_question_record(
     stamp = int(time.time() * 1000)
     return {
         "id": f"AUTO_{stamp}_{abs(hash(data.get('question', ''))) % 100000}",
-        "source": "content_factory",
+        "source": "gemini35_content_factory",
         "created_at": _now_iso(),
+        "bank_version": config.bank_version,
         "domain": domain_for_chapter_group(target.chapter_group),
         "chapter_group": target.chapter_group,
         "chapter_id": target.chapter_id,
@@ -259,6 +268,7 @@ def to_question_record(
         "provenance": {
             "model": config.model_name,
             "prompt_version": config.prompt_version,
+            "bank_version": config.bank_version,
             "validator_score": validation.score,
             "validator_reasons": validation.reasons,
             "syllabus_node": str(data.get("syllabus_node", target.chapter_id)),
@@ -291,11 +301,19 @@ class ContentFactory:
 
         stats = FactoryStats(targets=len(targets))
         accepted_records: List[Dict[str, Any]] = []
+        deadline = time.monotonic() + (self.config.max_runtime_minutes * 60)
 
-        for target in targets:
+        target_index = 0
+        while targets and stats.accepted < self.config.target_accepts and time.monotonic() < deadline:
+            target = targets[target_index % len(targets)]
+            target_index += 1
+            if time.monotonic() >= deadline:
+                break
             if stats.accepted >= self.config.target_accepts:
                 break
             for _attempt in range(self.config.max_attempts_per_target):
+                if time.monotonic() >= deadline:
+                    break
                 if stats.accepted >= self.config.target_accepts:
                     break
                 prompt = build_generation_prompt(target, self.config.prompt_version)
@@ -334,9 +352,15 @@ class ContentFactory:
                 break
 
         if stats.generated or stats.accepted or stats.queued_for_review or stats.rejected or stats.duplicates or stats.errors:
+            stats.api_call_count = int(getattr(self.generator, "api_call_count", stats.generated))
+            stats.rate_limit_errors = int(getattr(self.generator, "rate_limit_errors", 0))
+            total_questions = len(load_existing_items(self.config.question_bank_path))
+            meta.meta["bank_version"] = self.config.bank_version
             meta.meta["content_factory"] = {
                 "last_refill_at": _now_iso(),
                 "model": self.config.model_name,
+                "bank_version": self.config.bank_version,
+                "mode": self.config.mode,
                 "prompt_version": self.config.prompt_version,
                 "target_accepts": self.config.target_accepts,
                 "generated": stats.generated,
@@ -346,10 +370,13 @@ class ContentFactory:
                 "duplicates": stats.duplicates,
                 "errors": stats.errors,
                 "targets": stats.targets,
+                "api_call_count": stats.api_call_count,
+                "rate_limit_errors": stats.rate_limit_errors,
             }
             meta.meta["question_bank"] = {
                 "path": str(self.config.question_bank_path),
-                "total_questions": len(existing) + stats.accepted,
+                "bank_version": self.config.bank_version,
+                "total_questions": total_questions,
                 "updated_at": _now_iso(),
             }
             if accepted_records:
@@ -370,6 +397,7 @@ class ContentFactory:
                 "reasons": decision.reasons,
                 "prompt_version": self.config.prompt_version,
                 "model": self.config.model_name,
+                "bank_version": self.config.bank_version,
             },
         )
 
@@ -383,6 +411,7 @@ class ContentFactory:
                 "error": error,
                 "prompt_version": self.config.prompt_version,
                 "model": self.config.model_name,
+                "bank_version": self.config.bank_version,
             },
         )
 

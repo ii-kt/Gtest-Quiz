@@ -1,4 +1,4 @@
-const CACHE_NAME = 'gtest-quiz-static-v5';
+const CACHE_NAME = 'gtest-quiz-static-v6';
 const SHELL = [
   './index.html',
   './offline-app.js',

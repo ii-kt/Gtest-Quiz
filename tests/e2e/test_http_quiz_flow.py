@@ -8,6 +8,7 @@ import pytest
 
 from backend.app.main import create_server
 from backend.app.services import QuizService
+from tests.bank_fixture import install_temp_question_bank
 
 
 def _post(url: str, body: dict, headers: dict | None = None):
@@ -21,7 +22,8 @@ def _post(url: str, body: dict, headers: dict | None = None):
 
 
 @pytest.mark.e2e
-def test_http_quiz_flow_end_to_end():
+def test_http_quiz_flow_end_to_end(tmp_path, monkeypatch):
+    install_temp_question_bank(monkeypatch, tmp_path)
     db_path = ".runtime/test_e2e_quiz.db"
     meta_path = ".runtime/test_e2e_meta.json"
     if os.path.exists(db_path):

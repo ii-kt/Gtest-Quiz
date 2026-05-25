@@ -18,7 +18,7 @@ from gtest_quiz.env import get_env, load_dotenv
 
 
 class Config:
-    model = "gemini-2.5-flash-lite"
+    model = "gemini-3.5-flash"
     target = 80
     retry = 3
     sleep = 2

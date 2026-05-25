@@ -10,6 +10,7 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
+from gtest_quiz.bank_epoch import current_bank_version, current_model_name
 from gtest_quiz.content_factory import ContentFactory, FactoryConfig, GeneratedQuestionSpec
 from gtest_quiz.refill_pipeline import GeminiQuestionGenerator
 from gtest_quiz.env import get_env, load_dotenv
@@ -38,7 +39,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Run the Gtest content factory")
     parser.add_argument("--dry-run", action="store_true", help="Use a deterministic local generator")
     parser.add_argument("--target", type=int, default=5, help="Accepted question target")
-    parser.add_argument("--model", default="gemini-2.5-flash-lite")
+    parser.add_argument("--model", default=current_model_name())
     args = parser.parse_args()
 
     if args.dry_run:
@@ -50,7 +51,10 @@ def main() -> None:
             raise SystemExit("GEMINI_API_KEY is not set")
         generator = GeminiQuestionGenerator(api_key=key, model_name=args.model)
 
-    factory = ContentFactory(FactoryConfig(model_name=args.model, target_accepts=args.target), generator)
+    factory = ContentFactory(
+        FactoryConfig(model_name=args.model, target_accepts=args.target, bank_version=current_bank_version()),
+        generator,
+    )
     stats = factory.run()
     print(json.dumps(stats.__dict__, ensure_ascii=False, indent=2))
 

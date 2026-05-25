@@ -14,7 +14,7 @@ from gtest_quiz.question_bank import load_question_bank
 # ===== CONFIG =====
 TARGET_DAILY_GENERATION = 80
 MAX_RETRY = 3
-MODEL_NAME = "gemini-2.5-flash-lite"
+MODEL_NAME = "gemini-3.5-flash"
 
 # ===== UTILS =====
 

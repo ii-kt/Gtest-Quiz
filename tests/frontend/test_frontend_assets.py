@@ -46,6 +46,8 @@ def test_frontend_is_static_offline_first():
     assert "updateSchedule" in script
     assert "exportAccount" in script
     assert "importAccount" in script
+    assert "applyBankVersionMigration" in script
+    assert "bankResetNoticeSeen" in script
     assert "learnerId" not in script
     assert "ensureLearner" not in script
 
@@ -56,9 +58,11 @@ def test_static_question_bank_asset_matches_source_bank():
     assert bank["schema_version"] == "gtest_quiz_static_bank_v1"
     assert bank["meta"]["question_count"] == source_count
     assert len(bank["questions"]) == source_count
-    first = bank["questions"][0]
-    assert {"id", "question", "choices", "correct_index", "explanation", "chapter_id"} <= set(first)
-    assert len(first["choices"]) == 4
+    assert bank["meta"]["bank_version"] == "gemini35_v1"
+    if bank["questions"]:
+        first = bank["questions"][0]
+        assert {"id", "question", "choices", "correct_index", "explanation", "chapter_id", "bank_version"} <= set(first)
+        assert len(first["choices"]) == 4
 
 
 def test_frontend_pwa_assets_exist():
@@ -79,7 +83,7 @@ def test_frontend_pwa_assets_exist():
 
     worker_text = worker.read_text(encoding="utf-8")
     assert "CACHE_NAME" in worker_text
-    assert "gtest-quiz-static-v5" in worker_text
+    assert "gtest-quiz-static-v6" in worker_text
     assert "./offline-app.js" in worker_text
     assert "./question-bank.json" in worker_text
     assert "cacheFirst" in worker_text

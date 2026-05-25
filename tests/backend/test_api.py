@@ -6,6 +6,7 @@ import urllib.request
 
 from backend.app.main import create_server
 from backend.app.services import QuizService
+from tests.bank_fixture import install_temp_question_bank
 
 
 def _post(url: str, body: dict, headers: dict | None = None):
@@ -18,7 +19,8 @@ def _post(url: str, body: dict, headers: dict | None = None):
     return urllib.request.urlopen(req, timeout=3)
 
 
-def test_http_session_and_quiz_flow():
+def test_http_session_and_quiz_flow(tmp_path, monkeypatch):
+    install_temp_question_bank(monkeypatch, tmp_path)
     db_path = ".runtime/test_quiz.db"
     meta_path = ".runtime/test_meta.json"
     if os.path.exists(db_path):

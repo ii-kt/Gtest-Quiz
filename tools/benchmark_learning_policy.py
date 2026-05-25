@@ -19,7 +19,16 @@ def run_policy_benchmark(seed: int = 7, rounds: int = 160, policy_variant: str =
     random.seed(seed)
     bank = get_all_questions()
     if not bank:
-        return {"rounds": 0, "error": "empty question bank"}
+        return {
+            "rounds": 0,
+            "accuracy": 0.0,
+            "unique_questions": 0,
+            "covered_chapters": 0,
+            "scheduled_items": 0,
+            "review_ready_items": 0,
+            "policy": policy_variant,
+            "bootstrap_empty_bank": True,
+        }
 
     history: List[Dict[str, Any]] = []
     summary: Dict[str, Dict[str, Any]] = {}

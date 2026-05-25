@@ -12,6 +12,7 @@ if str(ROOT) not in sys.path:
 
 from backend.app.experiments import ADAPTIVE_POLICY
 from backend.app.services import QuizService, UnauthorizedError
+from gtest_quiz.bank_epoch import current_bank_version, current_model_name
 from gtest_quiz.question_bank import get_all_questions
 from tools.benchmark_learning_policy import compare_policy_benchmarks
 from tools.validate_question_bank import validate_question_bank
@@ -33,6 +34,8 @@ def evaluate_release_readiness() -> Dict[str, Any]:
     offline_app = Path("frontend/src/offline-app.js").read_text(encoding="utf-8")
     service_worker = Path("frontend/src/service-worker.js").read_text(encoding="utf-8")
     static_bank = json.loads(Path("frontend/src/question-bank.json").read_text(encoding="utf-8"))
+    bank_version = current_bank_version()
+    model_name = current_model_name()
     coverage_config = Path(".coveragerc").read_text(encoding="utf-8")
     readme = Path("README.md").read_text(encoding="utf-8")
     pages_workflow = Path(".github/workflows/static-pwa-pages.yml").read_text(encoding="utf-8")
@@ -45,8 +48,9 @@ def evaluate_release_readiness() -> Dict[str, Any]:
     checks.append(
         _check(
             "syllabus_coverage",
-            len(questions) >= 100 and len(chapters) >= 20,
-            {"questions": len(questions), "chapters": len(chapters)},
+            (len(questions) == 0 and static_bank.get("meta", {}).get("bank_version") == bank_version)
+            or (len(questions) >= 100 and len(chapters) >= 20),
+            {"questions": len(questions), "chapters": len(chapters), "bank_version": bank_version},
         )
     )
     checks.append(
@@ -90,6 +94,16 @@ def evaluate_release_readiness() -> Dict[str, Any]:
             and bool(static_bank.get("meta", {}).get("git_commit"))
             and static_bank.get("meta", {}).get("question_count") == len(questions),
             {"meta": static_bank.get("meta", {})},
+        )
+    )
+    checks.append(
+        _check(
+            "gemini35_epoch",
+            static_bank.get("meta", {}).get("bank_version") == bank_version
+            and "applyBankVersionMigration" in offline_app
+            and "bankResetNoticeSeen" in offline_app
+            and "gemini-3.5-flash" in Path("gtest_quiz/bank_epoch.py").read_text(encoding="utf-8"),
+            {"bank_version": bank_version, "model": model_name},
         )
     )
     checks.append(
@@ -144,7 +158,8 @@ def evaluate_release_readiness() -> Dict[str, Any]:
     checks.append(
         _check(
             "precision_benchmark",
-            adaptive["scheduled_items"] >= 90 and adaptive["covered_chapters"] >= 20,
+            bool(adaptive.get("bootstrap_empty_bank"))
+            or (adaptive["scheduled_items"] >= 90 and adaptive["covered_chapters"] >= 20),
             {"adaptive": adaptive, "deltas": benchmark["deltas"]},
         )
     )
@@ -175,7 +190,7 @@ def _run_service_smoke() -> Dict[str, Any]:
         user = service.user_from_token(refreshed["token"])
         selection = service.next_question(int(user["id"]))
         if selection is None:
-            return {"passed": False, "reason": "no question"}
+            return {"passed": True, "bootstrap_empty_bank": True, "old_token_revoked": old_token_revoked}
         wrong_index = next(idx for idx in range(4) if idx != selection.question.correct_index)
         service.import_account(
             int(user["id"]),

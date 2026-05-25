@@ -14,6 +14,7 @@ from pathlib import Path
 import json
 
 from gtest_quiz.env import get_env, load_dotenv
+from gtest_quiz.bank_epoch import DEFAULT_GEMINI_MODEL
 
 
 # ------------------------------------------------------------
@@ -69,7 +70,7 @@ class AppConfig:
         # 問題生成ではモデルを明示固定する。画像/動画系などの最新モデルを
         # 自動選択すると、品質とAPI消費の両方が不安定になる。
         self.model_failover_priority = [
-            "gemini-2.5-flash-lite",
+            DEFAULT_GEMINI_MODEL,
         ]
 
     # ============================================================

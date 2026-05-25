@@ -119,10 +119,14 @@ def test_content_factory_accepts_and_writes_provenance(tmp_path: Path):
     assert stats.accepted == 1
     written = json.loads(bank.read_text(encoding="utf-8").splitlines()[0])
     assert written["domain"] == "技術分野"
+    assert written["bank_version"] == "gemini35_v1"
     assert written["provenance"]["prompt_version"]
+    assert written["provenance"]["model"] == "gemini-3.5-flash"
+    assert written["provenance"]["bank_version"] == "gemini35_v1"
     assert written["provenance"]["validator_score"] >= 75
     assert provenance.exists()
     updated_meta = json.loads(meta_path.read_text(encoding="utf-8"))
+    assert updated_meta["bank_version"] == "gemini35_v1"
     assert updated_meta["content_factory"]["accepted"] == 1
     assert updated_meta["question_bank"]["total_questions"] == 1
 
