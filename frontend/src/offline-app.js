@@ -93,7 +93,7 @@ function loadState() {
 
 function persistState() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-  requestState.textContent = `保存 ${new Date().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })}`;
+  requestState.textContent = `saved ${new Date().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })}`;
 }
 
 function nowIso() {

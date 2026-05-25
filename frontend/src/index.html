@@ -752,6 +752,7 @@
           <h1>G検定 Quiz Practice</h1>
           <div class="brand-sub" aria-label="app status">
             <span id="apiState" class="badge" data-tone="green">完全オフライン</span>
+            <span id="sessionState" class="badge" data-tone="blue" hidden>端末保存</span>
             <span id="queueState" class="badge" data-tone="amber">問題 0</span>
           </div>
         </div>
@@ -798,7 +799,7 @@
       <aside class="side-stack">
         <section class="insight-panel">
           <div class="section-head">
-            <strong>学習状況</strong>
+            <strong>Performance</strong>
             <span id="total" class="badge">回答 0</span>
           </div>
           <div class="metric-grid">
@@ -813,29 +814,29 @@
 
         <section class="insight-panel">
           <div class="section-head">
-            <strong>出題モード</strong>
-            <span id="requestState" class="badge">保存前</span>
+            <strong>Learning Mode</strong>
+            <span id="requestState" class="badge">local</span>
           </div>
           <div class="panel-body">
-            <select id="policySelect" aria-label="出題モード">
-              <option value="adaptive_mastery_v2">おすすめ復習</option>
-              <option value="chapter_balanced_v1">章バランス</option>
-              <option value="random_baseline_v1">ランダム</option>
+            <select id="policySelect" aria-label="learning policy">
+              <option value="adaptive_mastery_v2">adaptive_mastery_v2</option>
+              <option value="chapter_balanced_v1">chapter_balanced_v1</option>
+              <option value="random_baseline_v1">random_baseline_v1</option>
             </select>
             <button id="exportBtn" type="button">エクスポート</button>
             <button id="importBtn" type="button">インポート</button>
             <input id="importFile" type="file" accept="application/json" />
-            <div id="authState" class="status" aria-live="polite">端末内保存</div>
+            <div id="authState" class="status" aria-live="polite">ローカルプロファイル</div>
           </div>
         </section>
 
         <section class="insight-panel">
-          <div class="section-head"><strong>弱点マップ</strong></div>
+          <div class="section-head"><strong>Weak Map</strong></div>
           <div id="masteryList" class="panel-body"><div class="empty">データ待機中</div></div>
         </section>
 
         <section class="insight-panel">
-          <div class="section-head"><strong>最近の回答</strong></div>
+          <div class="section-head"><strong>Recent</strong></div>
           <div id="timeline" class="panel-body"><div class="empty">履歴なし</div></div>
         </section>
       </aside>
