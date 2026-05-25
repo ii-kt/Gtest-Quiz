@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import time
+import hashlib
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
@@ -24,6 +25,7 @@ PROMPT_VERSION = "gtest_factory_v3_2026-05-21"
 QUESTION_BANK_PATH = Path("bank/question_bank.jsonl")
 REVIEW_QUEUE_PATH = Path("bank/generated_review_queue.jsonl")
 PROVENANCE_PATH = Path("bank/question_provenance.jsonl")
+LEGAL_CHAPTER_GROUPS = {"AIに関する法律と契約", "AI倫理・AIガバナンス"}
 
 
 class GeneratedQuestionSpec(BaseModel):
@@ -50,6 +52,8 @@ class FactoryConfig:
     min_explanation_length: int = 80
     review_threshold: int = 75
     max_attempts_per_target: int = 3
+    per_chapter_floor: int = 10
+    allow_over_floor_growth: bool = True
     question_bank_path: Path = QUESTION_BANK_PATH
     review_queue_path: Path = REVIEW_QUEUE_PATH
     provenance_path: Path = PROVENANCE_PATH
@@ -73,6 +77,7 @@ class CoverageTarget:
     current_count: int
     target_count: int
     priority: float
+    rotation_score: int = 0
 
 
 @dataclass(frozen=True)
@@ -91,6 +96,10 @@ def _jsonl_append(path: Path, item: Dict[str, Any]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("a", encoding="utf-8") as handle:
         handle.write(json.dumps(item, ensure_ascii=False) + "\n")
+
+
+def domain_for_chapter_group(chapter_group: str) -> str:
+    return "法律分野" if chapter_group in LEGAL_CHAPTER_GROUPS else "技術分野"
 
 
 def build_generation_prompt(target: CoverageTarget, prompt_version: str = PROMPT_VERSION) -> str:
@@ -134,7 +143,18 @@ def load_existing_items(path: Path = QUESTION_BANK_PATH) -> List[Dict[str, Any]]
     return items
 
 
-def build_coverage_targets(meta: MetaManager, existing_items: Iterable[Dict[str, Any]], per_chapter_floor: int = 10) -> List[CoverageTarget]:
+def _daily_rotation_score(chapter_id: str) -> int:
+    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    digest = hashlib.sha256(f"{today}:{chapter_id}".encode("utf-8")).hexdigest()
+    return int(digest[:8], 16)
+
+
+def build_coverage_targets(
+    meta: MetaManager,
+    existing_items: Iterable[Dict[str, Any]],
+    per_chapter_floor: int = 10,
+    allow_over_floor_growth: bool = True,
+) -> List[CoverageTarget]:
     counts: Dict[str, int] = {}
     groups: Dict[str, str] = {}
     for item in existing_items:
@@ -158,7 +178,15 @@ def build_coverage_targets(meta: MetaManager, existing_items: Iterable[Dict[str,
             current = counts.get(chapter_id, 0)
             target_count = max(per_chapter_floor, int(float(sub_val.get("weight", 1.0)) * per_chapter_floor))
             deficit = max(0, target_count - current)
-            priority = deficit / max(1, target_count)
+            rotation_score = _daily_rotation_score(chapter_id)
+            if deficit > 0:
+                priority = deficit / max(1, target_count)
+            elif allow_over_floor_growth:
+                surplus = current - target_count
+                priority = float(sub_val.get("weight", 1.0)) / max(1, surplus + 1)
+                target_count = current + 1
+            else:
+                priority = 0.0
             targets.append(
                 CoverageTarget(
                     chapter_group=groups.get(chapter_id, group_label),
@@ -166,6 +194,7 @@ def build_coverage_targets(meta: MetaManager, existing_items: Iterable[Dict[str,
                     current_count=current,
                     target_count=target_count,
                     priority=priority,
+                    rotation_score=rotation_score,
                 )
             )
 
@@ -178,10 +207,11 @@ def build_coverage_targets(meta: MetaManager, existing_items: Iterable[Dict[str,
                     current_count=current,
                     target_count=max(per_chapter_floor, current),
                     priority=0.0,
+                    rotation_score=_daily_rotation_score(chapter_id),
                 )
             )
 
-    return sorted(targets, key=lambda t: (-t.priority, t.current_count, t.chapter_id))
+    return sorted(targets, key=lambda t: (-t.priority, t.current_count, t.rotation_score, t.chapter_id))
 
 
 def decide_candidate(
@@ -217,7 +247,7 @@ def to_question_record(
         "id": f"AUTO_{stamp}_{abs(hash(data.get('question', ''))) % 100000}",
         "source": "content_factory",
         "created_at": _now_iso(),
-        "domain": "JDLA",
+        "domain": domain_for_chapter_group(target.chapter_group),
         "chapter_group": target.chapter_group,
         "chapter_id": target.chapter_id,
         "difficulty": str(data.get("difficulty", "standard")),
@@ -248,7 +278,16 @@ class ContentFactory:
         meta.load()
         existing = load_existing_items(self.config.question_bank_path)
         duplicate_index = build_duplicate_index(existing)
-        targets = [target for target in build_coverage_targets(meta, existing) if target.priority > 0]
+        targets = [
+            target
+            for target in build_coverage_targets(
+                meta,
+                existing,
+                per_chapter_floor=self.config.per_chapter_floor,
+                allow_over_floor_growth=self.config.allow_over_floor_growth,
+            )
+            if target.priority > 0
+        ]
 
         stats = FactoryStats(targets=len(targets))
         accepted_records: List[Dict[str, Any]] = []
@@ -292,6 +331,30 @@ class ContentFactory:
                 accepted_records.append(record)
                 stats.accepted += 1
                 duplicate_index = build_duplicate_index([*existing, *accepted_records])
+                break
+
+        if stats.generated or stats.accepted or stats.queued_for_review or stats.rejected or stats.duplicates or stats.errors:
+            meta.meta["content_factory"] = {
+                "last_refill_at": _now_iso(),
+                "model": self.config.model_name,
+                "prompt_version": self.config.prompt_version,
+                "target_accepts": self.config.target_accepts,
+                "generated": stats.generated,
+                "accepted": stats.accepted,
+                "queued_for_review": stats.queued_for_review,
+                "rejected": stats.rejected,
+                "duplicates": stats.duplicates,
+                "errors": stats.errors,
+                "targets": stats.targets,
+            }
+            meta.meta["question_bank"] = {
+                "path": str(self.config.question_bank_path),
+                "total_questions": len(existing) + stats.accepted,
+                "updated_at": _now_iso(),
+            }
+            if accepted_records:
+                meta.meta["last_chapter_id"] = str(accepted_records[-1].get("chapter_id", ""))
+            meta.save()
 
         return stats
 

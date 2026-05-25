@@ -1,6 +1,6 @@
 # Content Factory
 
-The content factory is the Phase 3 generation pipeline for maintaining the G検定 question bank.
+The content factory is the current generation pipeline for maintaining the G検定 question bank. Older refill scripts live under `tools/legacy/` and are not part of the normal workflow.
 
 ## Pipeline
 
@@ -9,7 +9,10 @@ The content factory is the Phase 3 generation pipeline for maintaining the G検�
 3. Validate structure, explanation length, difficulty, answer index, choice quality, and duplicates.
 4. Accept high-quality candidates into `bank/question_bank.jsonl`.
 5. Queue borderline or rejected candidates in `bank/generated_review_queue.jsonl`.
-6. Write provenance to `bank/question_provenance.jsonl`.
+6. Write provenance to `bank/question_provenance.jsonl` when items are accepted or promoted.
+7. Save refill metadata to `bank/meta.json` and rebuild `frontend/src/question-bank.json` for the PWA.
+
+The first pass fills chapters below the per-chapter floor. After all chapters reach the floor, daily refill continues with a small rotating target set, so a full 55 chapter x 10 question bank still receives new questions.
 
 ## Provenance
 
@@ -34,8 +37,10 @@ python tools/run_content_factory.py --dry-run --target 1
 Gemini-backed run:
 
 ```bash
-python tools/run_content_factory.py --target 20 --model gemini-2.5-flash-lite
+python tools/auto_refill_quality.py
 ```
+
+The scheduled GitHub Actions job runs once per day at `17 0 * * *` and uses `target_daily=5`. The model is explicitly fixed to `gemini-2.5-flash-lite` for text question generation. Do not use "latest model" discovery for automated refill jobs.
 
 Review queue summary:
 
@@ -47,4 +52,11 @@ Promote a reviewed candidate:
 
 ```bash
 python tools/review_generated_queue.py --promote 0
+```
+
+After any accepted or promoted items:
+
+```bash
+python tools/validate_question_bank.py
+python tools/build_static_pwa_assets.py
 ```

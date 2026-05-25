@@ -3,10 +3,10 @@ config.py
 =========
 
 アプリ全体で利用する設定値を一元管理する。
-Streamlit、Gemini API、ファイルパス、モデルフェールオーバーなど
+Streamlit、Gemini API、ファイルパス、問題生成モデルなど
 すべてこのクラスを通じて取得する。
 
-本ファイルは app.py と tools/auto_refill.py の共通設定でもある。
+本ファイルは app.py と現行の問題生成補助CLIの共通設定でもある。
 """
 
 from dataclasses import dataclass
@@ -36,8 +36,7 @@ class AppConfig:
 
     - APIキーの読み取り
     - QuestionBank / Meta のパス
-    - モデル一覧 API
-    - フェールオーバー順
+    - 問題生成モデル
     """
 
     # ---------- API ----------
@@ -51,7 +50,7 @@ class AppConfig:
     meta_json_path: Path = BANK_DIR / "meta.json"
     syllabus_pdf_path: Path = DATA_DIR / "JDLA_Gtest_Syllabus_2024_v1.3_JP.pdf"
 
-    # ---------- モデルフェールオーバー設定 ----------
+    # ---------- 問題生成モデル設定 ----------
     model_failover_priority: list = None
 
     # ---------- 自動生成設定 ----------
@@ -67,14 +66,10 @@ class AppConfig:
         # APIキーのロード
         self.gemini_api_key = self._load_api_key()
 
-        # 最新モデル → fallback → fallback の順で探索
+        # 問題生成ではモデルを明示固定する。画像/動画系などの最新モデルを
+        # 自動選択すると、品質とAPI消費の両方が不安定になる。
         self.model_failover_priority = [
-            # 最新モデルは実行時に ModelManager が API 動的取得
-            "latest",
-            # 以下は保険のフェールオーバー
-            "gemini-pro",
-            "gemini-1.5-pro",
-            "gemini-1.0-pro",
+            "gemini-2.5-flash-lite",
         ]
 
     # ============================================================

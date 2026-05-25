@@ -1,6 +1,15 @@
-# Target Architecture (/goal B)
+# Target Architecture
 
-## Phase 1: Architecture
+The active learner-facing product is the static offline PWA in `frontend/src/`. Backend adapters are retained for local validation, OpenAPI contracts, future sync, and hosted experiments.
+
+## Static PWA Path
+
+- `frontend/src/index.html`: application shell.
+- `frontend/src/offline-app.js`: browser learning engine, localStorage persistence, import/export, and adaptive selection.
+- `frontend/src/question-bank.json`: static bank generated from `bank/question_bank.jsonl`.
+- `frontend/src/service-worker.js`: offline app-shell and question-bank cache.
+
+## Backend/Tooling Path
 - Backend application boundary: `backend/app/`
 - Runnable HTTP adapter: `backend/app/main.py` (`run`, `create_server`)
 - ASGI/OpenAPI adapter: `backend/app/asgi.py`
@@ -23,7 +32,7 @@
 
 ## Phase 3: UI Refresh
 - Static offline browser UI (`frontend/src/index.html`)
-- Credential-free, device-local learner identity
+- Credential-free, device-local learning state without a visible learner id
 - Immediate correct/incorrect feedback and running score
 - Local progress, due review count, and mastery display
 
@@ -31,7 +40,7 @@
 - Unit/integration/backend/frontend/e2e tests via `pytest`
 - HTTP-level backend tests for auth/quiz/stats/error codes
 - CI quality gates (Python 3.10/3.11/3.12) + release readiness workflow
-- Coverage gate enabled in CI/release checks
+- Coverage gate enabled in CI/release checks with `.coveragerc` scope. API adapter glue and legacy UI/generation paths are documented outside the primary gate.
 
 ## Phase 5: Productization and Precision
 - One-click learner sessions, hashed session tokens, session expiry, refresh revocation, and idempotent SQLite migrations
@@ -39,4 +48,4 @@
 - Observability across FastAPI and stdlib adapters: request IDs, latency metrics, structured logs, audit events
 - Deployment profiles for local, classroom, and hosted operation
 - Adaptive policy compared against random and chapter-balanced baselines with `/learning/policy` A/B hooks
-- Release rubric and automated readiness gate (`tools/release_readiness.py`)
+- Release rubric component (`tools/release_readiness.py`) plus pytest coverage/e2e gates for the full release decision

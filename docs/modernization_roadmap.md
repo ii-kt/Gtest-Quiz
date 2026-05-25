@@ -1,6 +1,6 @@
 # Modernization Roadmap
 
-This project is being moved from a demo-grade quiz app to a production-minded adaptive learning system.
+This project is being moved from a demo-grade quiz app to a maintainable offline-first learning product. The current production path is the static PWA in `frontend/src/`; backend and generation tooling support validation, future sync, and local experiments.
 
 ## Phase 0 - Stabilize the Core (implemented)
 
@@ -18,8 +18,8 @@ This project is being moved from a demo-grade quiz app to a production-minded ad
 - Add an ASGI/FastAPI adapter with OpenAPI docs while keeping the stdlib server as a zero-dependency fallback. (implemented)
 - Split endpoints into versioned routers: auth, quiz, analytics, content, operations. (implemented)
 - Add contract tests generated from the OpenAPI schema. (implemented through `docs/api/openapi_contract_v1.json`)
-- Add CI gates for unit, integration, E2E, coverage, schema drift, and question-bank validation. (implemented)
-- Keep legacy routes available until the UI and tests complete the v1 migration.
+- Add CI gates for unit, integration, E2E, scoped coverage, schema drift, and question-bank validation. (implemented; coverage scope is documented in `.coveragerc`)
+- Keep legacy HTTP routes available only as compatibility/local validation support.
 - Repair question-bank JSON corruption uncovered by the new validation gate.
 
 ## UI Quality Track (parallel)
@@ -42,13 +42,13 @@ This project is being moved from a demo-grade quiz app to a production-minded ad
 
 - Migrate all generation to `google-genai` structured output. (implemented via `GeminiQuestionGenerator`)
 - Add schema-first generation, validator feedback loops, duplicate clustering, and syllabus coverage balancing. (implemented in `gtest_quiz.content_factory`)
-- Add review queues for low-confidence generated questions. (implemented as `bank/generated_review_queue.jsonl`)
-- Track provenance for every question: source, model, prompt version, validator score, and syllabus node. (implemented as embedded provenance plus `bank/question_provenance.jsonl`)
+- Add review queues for low-confidence generated questions. (implemented by `tools/review_generated_queue.py`; `bank/generated_review_queue.jsonl` is updated when the scheduled/manual quality workflow queues items)
+- Track provenance for generated questions: source, model, prompt version, validator score, and syllabus node. (embedded provenance and `bank/question_provenance.jsonl` are created for generated/promoted items; legacy seed questions carry normalized metadata fields)
 - Add dry-run, Gemini-backed factory run, queue summary, and promotion CLIs.
 
 ## Phase 4 - Productization (completed)
 
-- Add a proper learner-session model, token expiry, refresh revocation, and migration scripts. (implemented with one-click sessions, hashed session tokens, `sessions`, and `tools/migrate_storage.py`)
+- Add a proper learner-session model for optional backend use, token expiry, refresh revocation, and migration scripts. (implemented with one-click sessions, hashed session tokens, `sessions`, and `tools/migrate_storage.py`; the static PWA no longer displays or stores a learner id)
 - Add PWA offline practice, import/export, and mobile-first QA. (implemented as a static offline PWA with cached `question-bank.json`, device-local learning state, and file-based export/import)
 - Add observability: structured logs, request IDs, latency metrics, content-quality metrics, and audit events. (implemented in FastAPI middleware, stdlib fallback, SQLite metrics, and audit tables)
 - Package deployment profiles for local, classroom, and hosted operation. (implemented under `deploy/profiles/`)
@@ -58,4 +58,4 @@ This project is being moved from a demo-grade quiz app to a production-minded ad
 - Run learner simulations against the item bank to tune selection weights. (implemented in `tools/benchmark_learning_policy.py`)
 - Compare adaptive sequencing against random and chapter-balanced baselines. (implemented with `--compare`)
 - Add A/B hooks for selection policies. (implemented with `learning_policy_v1` assignment and `/api/v1/learning/policy`)
-- Maintain a release rubric: answer-key safety, syllabus coverage, generation quality, UI usability, and recovery paths. (implemented in `docs/release_rubric.md` and `tools/release_readiness.py`)
+- Maintain a release rubric: answer-key safety, syllabus coverage, generation quality, UI usability, and recovery paths. (implemented in `docs/release_rubric.md` and `tools/release_readiness.py`; full release gating also includes pytest coverage and e2e)

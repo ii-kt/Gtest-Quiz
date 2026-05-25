@@ -1,9 +1,8 @@
 """
-tools/auto_refill.py
+tools/legacy/auto_refill.py
 ======================
 
-GitHub Actions から毎日実行され、問題バンク (bank/question_bank.jsonl)
-に Gemini で生成した新しい問題を追加するスクリプト。
+Legacy script. The active generation path is `tools/auto_refill_quality.py`.
 
 特徴:
 - GEMINI_API_KEY がなければ何もせず正常終了（ワークフローを落とさない）

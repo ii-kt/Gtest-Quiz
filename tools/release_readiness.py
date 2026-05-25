@@ -33,6 +33,8 @@ def evaluate_release_readiness() -> Dict[str, Any]:
     offline_app = Path("frontend/src/offline-app.js").read_text(encoding="utf-8")
     service_worker = Path("frontend/src/service-worker.js").read_text(encoding="utf-8")
     static_bank = json.loads(Path("frontend/src/question-bank.json").read_text(encoding="utf-8"))
+    coverage_config = Path(".coveragerc").read_text(encoding="utf-8")
+    readme = Path("README.md").read_text(encoding="utf-8")
     pages_workflow = Path(".github/workflows/static-pwa-pages.yml").read_text(encoding="utf-8")
     operations_source = Path("backend/app/api/operations.py").read_text(encoding="utf-8")
     benchmark = compare_policy_benchmarks(seed=11, rounds=120)
@@ -83,6 +85,15 @@ def evaluate_release_readiness() -> Dict[str, Any]:
     )
     checks.append(
         _check(
+            "static_bank_build_metadata",
+            static_bank.get("meta", {}).get("generated_at") != "2026-05-22T00:00:00Z"
+            and bool(static_bank.get("meta", {}).get("git_commit"))
+            and static_bank.get("meta", {}).get("question_count") == len(questions),
+            {"meta": static_bank.get("meta", {})},
+        )
+    )
+    checks.append(
+        _check(
             "zero_cost_static_delivery",
             Path("frontend/src/.nojekyll").exists()
             and "actions/upload-pages-artifact" in pages_workflow
@@ -119,6 +130,17 @@ def evaluate_release_readiness() -> Dict[str, Any]:
         )
     )
     checks.append(_check("service_smoke", service_smoke["passed"], service_smoke))
+    checks.append(
+        _check(
+            "ci_coverage_scope_documented",
+            "backend/app/api/*" in coverage_config
+            and "gtest_quiz/ui.py" in coverage_config
+            and "CI release gate" in readme
+            and "release_readiness.py" in readme
+            and "coverage" in readme.lower(),
+            {"coverage_config": ".coveragerc"},
+        )
+    )
     checks.append(
         _check(
             "precision_benchmark",

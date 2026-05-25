@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import sys
 from collections import Counter
+from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, Iterable, List
 
@@ -14,6 +15,8 @@ from gtest_quiz.question_quality import build_duplicate_index, is_probable_dupli
 
 
 BANK_PATH = Path("bank/question_bank.jsonl")
+REQUIRED_METADATA = ("source", "created_at", "domain", "chapter_group")
+MIN_EXPLANATION_LENGTH = 80
 
 
 def _iter_jsonl(path: Path) -> Iterable[Dict[str, Any]]:
@@ -57,9 +60,21 @@ def validate_question_bank(path: Path = BANK_PATH) -> List[str]:
         if correct_index not in {0, 1, 2, 3}:
             errors.append(f"{path}:{line_no}: correct_index must be 0..3")
 
-        quality = validate_generated_question(row, min_explanation_length=20)
+        for field in REQUIRED_METADATA:
+            if not str(row.get(field, "")).strip():
+                errors.append(f"{path}:{line_no}: missing metadata field {field}")
+        created_at = str(row.get("created_at", "")).strip()
+        if created_at:
+            try:
+                datetime.fromisoformat(created_at.replace("Z", "+00:00"))
+            except ValueError:
+                errors.append(f"{path}:{line_no}: created_at must be ISO-8601")
+
+        quality = validate_generated_question(row, min_explanation_length=MIN_EXPLANATION_LENGTH)
         if not quality.is_valid:
             errors.append(f"{path}:{line_no}: quality validation failed: {', '.join(quality.reasons)}")
+        elif any(reason == "explanation is too short" for reason in quality.reasons):
+            errors.append(f"{path}:{line_no}: explanation must be at least {MIN_EXPLANATION_LENGTH} characters")
 
         question = str(row.get("question", ""))
         if is_probable_duplicate(question, duplicate_index):

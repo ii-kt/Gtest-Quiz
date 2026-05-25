@@ -25,9 +25,9 @@ meta = "bank/meta.json"
 syllabus_pdf = "data/JDLA_Gtest_Syllabus_2024_v1.3_JP.pdf"
 
 [gemini]
-# ここで指定したモデル名は「優先候補」として扱うだけであり、
-# 実際には利用可能な最新モデルにフォールバックする。
-preferred_model = "gemini-1.5-pro"
+# 問題生成用モデルは明示固定する。画像・動画など問題生成に不向きな最新モデルへ
+# 自動フォールバックしない。
+preferred_model = "gemini-2.5-flash-lite"
 # タイムアウト（秒）
 request_timeout = 60
 # 1回の問題生成で許容する最大トークン数の目安（概算）

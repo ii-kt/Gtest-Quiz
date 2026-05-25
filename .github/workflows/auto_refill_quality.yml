@@ -2,11 +2,15 @@ name: Auto Refill Question Bank (Quality Pipeline)
 
 on:
   schedule:
-    - cron: "0 0 * * *"
+    - cron: "17 0 * * *"
   workflow_dispatch: {}
 
 permissions:
   contents: write
+
+concurrency:
+  group: question-bank-quality-refill
+  cancel-in-progress: false
 
 jobs:
   auto-refill-quality:
@@ -14,10 +18,10 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: "3.11"
 
@@ -26,24 +30,34 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Run quality refill pipeline
+      - name: Run schema-first quality refill
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           PYTHONPATH: ${{ github.workspace }}
         run: |
           python tools/auto_refill_quality.py
 
-      - name: Commit and push updates
+      - name: Validate generated content
+        run: |
+          python tools/validate_question_bank.py
+          python tools/review_generated_queue.py --summary
+          python tools/build_static_pwa_assets.py
+
+      - name: Commit and push reviewed artifacts
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
           git add bank/question_bank.jsonl || true
           git add bank/meta.json || true
+          git add bank/generated_review_queue.jsonl || true
+          git add bank/question_provenance.jsonl || true
+          git add frontend/src/question-bank.json || true
+          git add frontend/src/pwa-icon-180.png frontend/src/pwa-icon-192.png frontend/src/pwa-icon-512.png || true
 
           if git diff --cached --quiet; then
-            echo "No changes to commit."
+            echo "No generated content changes to commit."
           else
-            git commit -m "chore: auto refill question bank with quality pipeline"
+            git commit -m "chore: quality refill question bank"
             git push
           fi

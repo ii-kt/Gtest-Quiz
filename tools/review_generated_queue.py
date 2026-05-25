@@ -10,7 +10,7 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from gtest_quiz.content_factory import PROVENANCE_PATH, QUESTION_BANK_PATH, REVIEW_QUEUE_PATH, _jsonl_append
+from gtest_quiz.content_factory import PROVENANCE_PATH, QUESTION_BANK_PATH, REVIEW_QUEUE_PATH, _jsonl_append, domain_for_chapter_group
 from gtest_quiz.question_quality import validate_generated_question
 
 
@@ -42,7 +42,7 @@ def promote(index: int, *, queue_path: Path = REVIEW_QUEUE_PATH, bank_path: Path
     target = item.get("target", {})
     if not isinstance(candidate, dict):
         raise ValueError("queue item has no candidate")
-    validation = validate_generated_question(candidate, min_explanation_length=40)
+    validation = validate_generated_question(candidate, min_explanation_length=80)
     if not validation.is_valid:
         raise ValueError(f"candidate is not promotable: {validation.reasons}")
 
@@ -50,7 +50,7 @@ def promote(index: int, *, queue_path: Path = REVIEW_QUEUE_PATH, bank_path: Path
         "id": f"REVIEW_{index}_{abs(hash(candidate.get('question', ''))) % 100000}",
         "source": "review_promoted",
         "created_at": item.get("queued_at", ""),
-        "domain": "JDLA",
+        "domain": domain_for_chapter_group(str(target.get("chapter_group", ""))),
         "chapter_group": target.get("chapter_group", ""),
         "chapter_id": target.get("chapter_id", candidate.get("syllabus_node", "")),
         "difficulty": candidate.get("difficulty", "standard"),

@@ -18,7 +18,7 @@ class RefillConfig:
         self,
         *,
         model_name: str = "gemini-2.5-flash-lite",
-        target_daily: int = 80,
+        target_daily: int = 5,
         max_retry: int = 3,
         min_explanation_length: int = 80,
         sleep_seconds_on_429: float = 2.0,

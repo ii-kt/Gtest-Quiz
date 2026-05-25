@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 import json
+import subprocess
 import struct
 import zlib
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List
 
@@ -38,10 +40,18 @@ def load_questions() -> List[Dict[str, Any]]:
 
 def write_static_bank() -> int:
     questions = load_questions()
+    git_commit = subprocess.run(
+        ["git", "rev-parse", "--short", "HEAD"],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+        check=False,
+    ).stdout.strip()
     payload = {
         "schema_version": "gtest_quiz_static_bank_v1",
         "meta": {
-            "generated_at": "2026-05-22T00:00:00Z",
+            "generated_at": datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z"),
+            "git_commit": git_commit,
             "source": "bank/question_bank.jsonl",
             "question_count": len(questions),
         },

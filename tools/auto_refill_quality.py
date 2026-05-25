@@ -8,7 +8,7 @@ from gtest_quiz.refill_pipeline import RefillConfig, run_refill
 def main() -> None:
     config = RefillConfig(
         model_name="gemini-2.5-flash-lite",
-        target_daily=100,
+        target_daily=5,
         max_retry=3,
         min_explanation_length=80,
     )

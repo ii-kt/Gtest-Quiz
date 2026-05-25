@@ -1,14 +1,22 @@
 # Gtest-Quiz
 
-G検定向けの完全オフライン静的PWAです。日常利用ではPCサーバーを起動せず、iPhoneのホーム画面から起動して、問題演習・学習履歴・復習スケジュールを端末内に保存します。
+G検定向けの完全オフライン静的PWAです。現行の推奨利用形態は `frontend/src/` をGitHub Pagesなどの静的ホスティングで配信し、iPhoneのSafariからホーム画面に追加して使う形です。日常利用ではPCサーバー、ログイン、APIキー、バックエンド起動は不要です。
+
+## Current Product Path
+
+- `frontend/src/`: 現行本番の静的PWA。問題演習、復習スケジュール、学習履歴、エクスポート/インポートをブラウザ内で完結します。
+- `bank/question_bank.jsonl`: 正本の問題バンク。`tools/build_static_pwa_assets.py` で `frontend/src/question-bank.json` に変換します。
+- `gtest_quiz/`: 問題生成、検証、シラバス/メタ情報、共通モデル、品質ロジックのライブラリです。
+- `tools/`: PWA資産生成、問題バンク検証、品質補充、release readiness、ベンチマークなどの補助CLIです。
+- `backend/`: 将来の同期/API/認証/監査ログ用およびローカル検証用です。現行PWAの日常利用には不要で、公開APIとしてそのまま運用する前提ではありません。
+- `app.py` / `.streamlit/`: 旧Streamlit実験UIです。現行本番ではなくlegacy扱いです。
+- `tools/legacy/`: 古い生成スクリプトです。通常は使わず、現行の生成ルートは `tools/auto_refill_quality.py` と `gtest_quiz.content_factory` です。
 
 ## iPhoneで使う
 
-1. GitHub Pagesの公開URLをiPhoneのSafariで開きます。
+1. iPhoneのSafariでGitHub Pagesの公開URLを開きます。
 2. 共有メニューから「ホーム画面に追加」を選びます。
 3. 以後はホーム画面の「G検定 Quiz」アイコンから起動します。
-
-このリポジトリのPages URLは通常次の形式です。
 
 ```text
 https://ii-kt.github.io/Gtest-Quiz/
@@ -16,53 +24,60 @@ https://ii-kt.github.io/Gtest-Quiz/
 
 初回アクセス時に `index.html`、`offline-app.js`、`question-bank.json`、PWAアイコンをService Workerがキャッシュします。キャッシュ後は通信がなくても練習できます。
 
-## Static App Files
+## Data and Recovery
 
-- `frontend/src/index.html`: iPhone向けPWAシェル
-- `frontend/src/offline-app.js`: ブラウザ内学習エンジン
-- `frontend/src/question-bank.json`: 静的問題バンク
-- `frontend/src/service-worker.js`: オフラインキャッシュ
-- `frontend/src/manifest.webmanifest`: PWA manifest
-- `frontend/src/pwa-icon-*.png`: iOS/PWAアイコン
-
-## Local Preview
-
-PCは本番利用には不要ですが、開発中の確認には静的サーバーを使えます。
-
-```bash
-python -m http.server 4173 --directory frontend/src
-```
-
-```text
-http://127.0.0.1:4173/index.html
-```
-
-## Data Model
-
-- 回答履歴、復習スケジュール、学習ポリシーはブラウザのlocalStorageに保存されます。
-- `エクスポート` で端末内の学習データをJSONとして退避できます。
+- 回答履歴、復習スケジュール、学習ポリシーはブラウザの `localStorage` に保存されます。
+- `localStorage` は恒久保存ではありません。SafariのWebサイトデータ削除、端末変更、ブラウザ変更、プライベートブラウズ、iOSのストレージ整理、誤操作で消える可能性があります。
+- 定期的にアプリ内の `エクスポート` で学習データをJSONとして退避してください。
 - `インポート` で退避データを復元できます。
 - インポート時の正誤は `question-bank.json` の `correct_index` から再計算されます。
 
-## Backend Tooling
+静的PWAはオフライン採点のため、配信される `question-bank.json` に `correct_index` と `explanation` を含みます。このアプリは個人学習用です。試験実施、採点付き共有テスト、答えを隠す必要がある用途には使えません。
 
-FastAPIバックエンドは静的PWAの日常利用には不要です。問題生成、品質検証、OpenAPI契約、ベンチマーク、将来の同期基盤として残しています。
+## API Keys
 
-Gemini APIキーは問題生成・補充フローだけで必要です。静的PWAで練習するだけなら不要です。
+Gemini APIキーは問題生成・補充フローだけで使います。静的PWAで練習するだけなら不要です。APIキーを `index.html` や `offline-app.js` に書いてはいけません。公開PWAでは全員に見えます。
 
-## Regenerate Static Bank
+## Question Bank Maintenance
 
-`bank/question_bank.jsonl` を更新したら、`frontend/src/question-bank.json` を再生成します。
-
-```bash
-python tools/build_static_pwa_assets.py
-```
-
-## Quality Gates
+正本の問題バンクを更新したら、静的PWA資産を再生成します。
 
 ```bash
 python tools/validate_question_bank.py
+python tools/build_static_pwa_assets.py
+```
+
+`tools/build_static_pwa_assets.py` はビルド時刻とGit commitを `frontend/src/question-bank.json` の `meta` に書き込みます。
+
+GitHub Actionsの本線は `Auto Refill Question Bank (Quality Pipeline)` です。JST 09:17相当の `17 0 * * *` で毎日1回、`target_daily=5` の少量補充を行います。各章10問に到達した後も、章ローテーションと重複チェックを維持して追加生成します。legacyの `auto_refill.yml` は無効化済みで、二重起動しません。
+
+```bash
+python tools/auto_refill_quality.py
+python tools/validate_question_bank.py
+python tools/review_generated_queue.py --summary
+python tools/build_static_pwa_assets.py
+```
+
+モデルは問題生成向けに `gemini-2.5-flash-lite` を明示固定しています。生成結果はvalidationとreview queue/provenanceを通し、`bank/question_bank.jsonl`、`bank/meta.json`、`bank/generated_review_queue.jsonl`、`bank/question_provenance.jsonl`、`frontend/src/question-bank.json` をcommit対象にします。
+
+## Quality Gates
+
+CI release gateとして見るべき基準は、以下をすべて通すことです。
+
+```bash
+python tools/validate_question_bank.py
+python tools/build_static_pwa_assets.py
+pytest tests/contracts
+pytest tests/test_question_quality.py tests/test_content_factory.py tests/test_refill_pipeline.py tests/integration tests/backend tests/frontend -m "not e2e" --cov=gtest_quiz --cov=backend/app --cov-report=term-missing --cov-fail-under=70
 python tools/benchmark_learning_policy.py --compare
 python tools/release_readiness.py
-pytest
+pytest tests/e2e -m e2e
 ```
+
+`tools/release_readiness.py` はPWA資産、問題バンク、answer-key safety、復旧経路、サービスsmoke、ベンチマーク、deployment profileを確認するrubricです。coverageそのものはpytest-covのCI gateで保証します。つまり `release_readiness.py` 単体は「全CIの代替」ではなく、CI release gateの一部です。
+
+coverage対象は `.coveragerc` で現行保守対象に絞っています。FastAPI APIルータ、ASGIアダプタ、Streamlit UI、旧生成パイプラインは将来/legacy補助機能としてcoverage gateから外しています。
+
+## Backend Status
+
+FastAPI版とstdlib HTTP版は、将来の同期/API/認証、OpenAPI契約、ローカル検証、移行検討のために残しています。現時点で公開APIとして運用する完成度ではありません。公開する場合は、CORS、レート制限、ログ保護、セッション有効期限、import/export入力制限、監査ログ、本番/開発プロファイル、hosted運用時の脅威モデルを再設計してください。
