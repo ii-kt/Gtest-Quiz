@@ -15,13 +15,27 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from gtest_quiz.bank_epoch import current_bank_version
-from gtest_quiz.content_factory import LEGAL_SOURCE_FIELDS, is_legal_target
 
 BANK_PATH = ROOT / "bank/question_bank.jsonl"
 FRONTEND = ROOT / "frontend/src"
 STATIC_BANK_PATH = FRONTEND / "question-bank.json"
 SERVICE_WORKER_PATH = FRONTEND / "service-worker.js"
 META_PATH = ROOT / "bank/meta.json"
+LEGAL_SOURCE_FIELDS = (
+    "source_url",
+    "source_title",
+    "source_version",
+    "source_checked_at",
+    "legal_basis",
+)
+LEGAL_MARKERS = ("法律", "倫理", "ガバナンス", "個人情報", "著作権", "ガイドライン", "規制")
+
+
+def is_legal_static_item(row: Dict[str, Any]) -> bool:
+    if any(str(row.get(field, "")).strip() for field in LEGAL_SOURCE_FIELDS):
+        return True
+    text = " ".join(str(row.get(key, "")) for key in ("domain", "chapter_group", "chapter_id"))
+    return any(marker in text for marker in LEGAL_MARKERS)
 
 
 def load_bank_version() -> str:
@@ -52,7 +66,7 @@ def load_questions() -> List[Dict[str, Any]]:
             "explanation": row.get("explanation", ""),
             "syllabus": row.get("syllabus", ""),
         }
-        if is_legal_target(str(item["chapter_group"]), str(item["chapter_id"]), str(item["domain"])):
+        if is_legal_static_item(row):
             for field in LEGAL_SOURCE_FIELDS:
                 item[field] = row.get(field, "")
         questions.append(item)
