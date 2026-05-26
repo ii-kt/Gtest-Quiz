@@ -4,7 +4,7 @@
 
 - The learner-facing app runs from static files only: `index.html`, `offline-app.js`, `question-bank.json`, `manifest.webmanifest`, icons, and `service-worker.js`.
 - iPhone use does not require a PC-hosted server. Publish `frontend/src/` to static hosting, open the HTTPS URL once in Safari, then add it to the Home Screen.
-- The Service Worker caches the app shell and the complete question bank for offline launch after first install.
+- The Service Worker caches the app shell for offline launch. `question-bank.json` is fetched network-first so daily generated content reaches existing iPhone installs; it falls back to the last cached bank only when offline.
 - Learning state is stored on the device through `localStorage`.
 
 ## Local Learning State
@@ -18,6 +18,7 @@
 ## Static Question Bank
 
 - `tools/build_static_pwa_assets.py` converts `bank/question_bank.jsonl` into `frontend/src/question-bank.json`.
+- The static bank metadata uses a deterministic `content_hash`; tracked artifacts do not store build timestamps or misleading commit hashes.
 - The static bank intentionally includes `correct_index` and `explanation` because the iPhone-only app has no server to reveal answers after submission.
 - The API contract still keeps `GET /quiz/next` answer-safe for server-backed use.
 

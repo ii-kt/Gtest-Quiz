@@ -11,6 +11,8 @@ backend/app/test_*.db
 
 # Local mutable metadata
 bank/meta.json
+bank/*.next.jsonl
+refill-result.json
 
 # Local secrets
 .env

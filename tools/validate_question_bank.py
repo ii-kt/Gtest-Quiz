@@ -38,6 +38,8 @@ REQUIRED_PROVENANCE = (
     "generated_at",
     "validator_score",
     "validator_reasons",
+    "review_score",
+    "review_reasons",
     "syllabus_node",
     "concepts",
     "bank_version",
@@ -145,6 +147,10 @@ def validate_static_bank(path: Path = STATIC_BANK_PATH) -> List[str]:
         errors.append(f"{path}: meta.bank_version must be {expected_bank_version}")
     if int(meta.get("question_count", -1)) != len(questions):
         errors.append(f"{path}: question_count does not match questions length")
+    if not str(meta.get("content_hash", "")).strip():
+        errors.append(f"{path}: meta.content_hash is required")
+    if "generated_at" in meta or "git_commit" in meta:
+        errors.append(f"{path}: tracked static bank must not contain generated_at or git_commit")
     for index, row in enumerate(questions, start=1):
         if str(row.get("id", "")).startswith(LEGACY_ID_PREFIXES):
             errors.append(f"{path}: question {index}: legacy id is not allowed")

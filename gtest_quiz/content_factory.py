@@ -58,6 +58,8 @@ class FactoryConfig:
     bank_version: str = DEFAULT_QUESTION_BANK_EPOCH
     mode: str = "daily"
     max_runtime_minutes: int = 25
+    update_meta: bool = True
+    explicit_targets: Optional[List["CoverageTarget"]] = None
     question_bank_path: Path = QUESTION_BANK_PATH
     review_queue_path: Path = REVIEW_QUEUE_PATH
     provenance_path: Path = PROVENANCE_PATH
@@ -84,6 +86,7 @@ class CoverageTarget:
     target_count: int
     priority: float
     rotation_score: int = 0
+    concepts: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -92,6 +95,8 @@ class CandidateDecision:
     validation: ValidationResult
     duplicate: bool
     reasons: List[str] = field(default_factory=list)
+    review_score: int = 0
+    review_reasons: List[str] = field(default_factory=list)
 
 
 def _now_iso() -> str:
@@ -109,6 +114,7 @@ def domain_for_chapter_group(chapter_group: str) -> str:
 
 
 def build_generation_prompt(target: CoverageTarget, prompt_version: str = PROMPT_VERSION) -> str:
+    concept_hint = ", ".join(target.concepts) if target.concepts else "chapter core concepts"
     return f"""
 あなたはJDLA G検定の専門作問者です。
 prompt_version: {prompt_version}
@@ -128,6 +134,7 @@ prompt_version: {prompt_version}
 
 対象大分類: {target.chapter_group}
 対象項目: {target.chapter_id}
+対象概念: {concept_hint}
 現在の問題数: {target.current_count}
 目標問題数: {target.target_count}
 """.strip()
@@ -230,17 +237,55 @@ def decide_candidate(
     review_threshold: int,
 ) -> CandidateDecision:
     validation = validate_generated_question(data, min_explanation_length=min_explanation_length)
+    review_score, review_reasons = review_generated_candidate(data, min_explanation_length=min_explanation_length)
     duplicate = is_probable_duplicate(str(data.get("question", "")), duplicate_index)
-    reasons = list(validation.reasons)
+    reasons = [*validation.reasons, *review_reasons]
     if duplicate:
         reasons.append("probable duplicate")
     if duplicate:
-        return CandidateDecision("duplicate", validation, duplicate, reasons)
-    if validation.is_valid:
-        return CandidateDecision("accept", validation, duplicate, reasons)
-    if validation.score >= review_threshold:
-        return CandidateDecision("review", validation, duplicate, reasons)
-    return CandidateDecision("reject", validation, duplicate, reasons)
+        return CandidateDecision("duplicate", validation, duplicate, reasons, review_score, review_reasons)
+    if validation.is_valid and review_score >= review_threshold:
+        return CandidateDecision("accept", validation, duplicate, reasons, review_score, review_reasons)
+    if validation.score >= review_threshold or review_score >= review_threshold:
+        return CandidateDecision("review", validation, duplicate, reasons, review_score, review_reasons)
+    return CandidateDecision("reject", validation, duplicate, reasons, review_score, review_reasons)
+
+
+def review_generated_candidate(data: Dict[str, Any], *, min_explanation_length: int = 120) -> tuple[int, List[str]]:
+    score = 100
+    reasons: List[str] = []
+    choices = [str(choice).strip() for choice in data.get("choices", [])]
+    correct_index = data.get("correct_index", -1)
+    explanation = str(data.get("explanation", ""))
+    concepts = [str(concept).strip() for concept in data.get("concepts", []) if str(concept).strip()]
+    syllabus_node = str(data.get("syllabus_node", "")).strip()
+
+    if len(choices) != 4 or len(set(choices)) != 4:
+        score -= 30
+        reasons.append("choices are not four unique options")
+    if correct_index not in {0, 1, 2, 3}:
+        score -= 40
+        reasons.append("correct_index is not a single valid answer")
+    if len(explanation) < min_explanation_length:
+        score -= 20
+        reasons.append("explanation is below production length")
+    if not any(token in explanation for token in ("正解", "正しい", "理由", "なぜ", "ため")):
+        score -= 10
+        reasons.append("explanation does not clearly state why the answer is correct")
+    if not any(token in explanation for token in ("不正解", "誤答", "他の選択肢", "一方", "ではない", "ではなく", "ありません", "差")):
+        score -= 10
+        reasons.append("explanation does not distinguish distractors")
+    if not concepts:
+        score -= 10
+        reasons.append("concept tags are missing")
+    if not syllabus_node:
+        score -= 10
+        reasons.append("syllabus_node is missing")
+    if len(str(data.get("question", ""))) < 18:
+        score -= 20
+        reasons.append("question is too short for concept checking")
+
+    return max(0, score), reasons
 
 
 def to_question_record(
@@ -248,7 +293,7 @@ def to_question_record(
     *,
     target: CoverageTarget,
     config: FactoryConfig,
-    validation: ValidationResult,
+    decision: CandidateDecision,
 ) -> Dict[str, Any]:
     stamp = int(time.time() * 1000)
     return {
@@ -269,8 +314,10 @@ def to_question_record(
             "model": config.model_name,
             "prompt_version": config.prompt_version,
             "bank_version": config.bank_version,
-            "validator_score": validation.score,
-            "validator_reasons": validation.reasons,
+            "validator_score": decision.validation.score,
+            "validator_reasons": decision.validation.reasons,
+            "review_score": decision.review_score,
+            "review_reasons": decision.review_reasons,
             "syllabus_node": str(data.get("syllabus_node", target.chapter_id)),
             "concepts": list(data.get("concepts", [])),
             "generated_at": _now_iso(),
@@ -288,16 +335,18 @@ class ContentFactory:
         meta.load()
         existing = load_existing_items(self.config.question_bank_path)
         duplicate_index = build_duplicate_index(existing)
-        targets = [
-            target
-            for target in build_coverage_targets(
-                meta,
-                existing,
-                per_chapter_floor=self.config.per_chapter_floor,
-                allow_over_floor_growth=self.config.allow_over_floor_growth,
-            )
-            if target.priority > 0
-        ]
+        targets = list(self.config.explicit_targets) if self.config.explicit_targets is not None else []
+        if self.config.explicit_targets is None:
+            targets = [
+                target
+                for target in build_coverage_targets(
+                    meta,
+                    existing,
+                    per_chapter_floor=self.config.per_chapter_floor,
+                    allow_over_floor_growth=self.config.allow_over_floor_growth,
+                )
+                if target.priority > 0
+            ]
 
         stats = FactoryStats(targets=len(targets))
         accepted_records: List[Dict[str, Any]] = []
@@ -343,7 +392,7 @@ class ContentFactory:
                     self._queue_review(target, data, decision)
                     continue
 
-                record = to_question_record(data, target=target, config=self.config, validation=decision.validation)
+                record = to_question_record(data, target=target, config=self.config, decision=decision)
                 _jsonl_append(self.config.question_bank_path, record)
                 _jsonl_append(self.config.provenance_path, {"id": record["id"], **record["provenance"]})
                 accepted_records.append(record)
@@ -351,7 +400,9 @@ class ContentFactory:
                 duplicate_index = build_duplicate_index([*existing, *accepted_records])
                 break
 
-        if stats.generated or stats.accepted or stats.queued_for_review or stats.rejected or stats.duplicates or stats.errors:
+        if self.config.update_meta and (
+            stats.generated or stats.accepted or stats.queued_for_review or stats.rejected or stats.duplicates or stats.errors
+        ):
             stats.api_call_count = int(getattr(self.generator, "api_call_count", stats.generated))
             stats.rate_limit_errors = int(getattr(self.generator, "rate_limit_errors", 0))
             total_questions = len(load_existing_items(self.config.question_bank_path))
@@ -395,6 +446,8 @@ class ContentFactory:
                 "decision": decision.action,
                 "score": decision.validation.score,
                 "reasons": decision.reasons,
+                "review_score": decision.review_score,
+                "review_reasons": decision.review_reasons,
                 "prompt_version": self.config.prompt_version,
                 "model": self.config.model_name,
                 "bank_version": self.config.bank_version,

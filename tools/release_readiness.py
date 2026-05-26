@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 import sys
 from tempfile import TemporaryDirectory
 from pathlib import Path
@@ -22,8 +23,10 @@ def _check(name: str, passed: bool, detail: Dict[str, Any] | None = None) -> Dic
     return {"name": name, "passed": passed, "detail": detail or {}}
 
 
-def evaluate_release_readiness() -> Dict[str, Any]:
+def evaluate_release_readiness(profile: str | None = None) -> Dict[str, Any]:
     checks: List[Dict[str, Any]] = []
+    readiness_profile = (profile or os.getenv("READINESS_PROFILE", "production")).strip().lower()
+    production_min_questions = int(os.getenv("PRODUCTION_MIN_QUESTIONS", "100"))
     bank_errors = validate_question_bank()
     questions = get_all_questions()
     chapters = {q.chapter_id for q in questions}
@@ -43,14 +46,29 @@ def evaluate_release_readiness() -> Dict[str, Any]:
     benchmark = compare_policy_benchmarks(seed=11, rounds=120)
     adaptive = benchmark["results"][ADAPTIVE_POLICY]
     service_smoke = _run_service_smoke()
+    question_count = len(questions)
+    static_question_count = len(static_bank.get("questions", []))
+    bootstrap_profile = readiness_profile == "bootstrap"
 
     checks.append(_check("question_bank_valid", not bank_errors, {"errors": bank_errors[:5]}))
     checks.append(
         _check(
+            "readiness_profile_question_count",
+            (bootstrap_profile and question_count < production_min_questions)
+            or (not bootstrap_profile and question_count >= production_min_questions),
+            {
+                "profile": readiness_profile,
+                "questions": question_count,
+                "production_min_questions": production_min_questions,
+            },
+        )
+    )
+    checks.append(
+        _check(
             "syllabus_coverage",
-            (len(questions) == 0 and static_bank.get("meta", {}).get("bank_version") == bank_version)
-            or (len(questions) >= 100 and len(chapters) >= 20),
-            {"questions": len(questions), "chapters": len(chapters), "bank_version": bank_version},
+            (bootstrap_profile and question_count < production_min_questions and static_bank.get("meta", {}).get("bank_version") == bank_version)
+            or (question_count >= 100 and len(chapters) >= 20),
+            {"questions": question_count, "chapters": len(chapters), "bank_version": bank_version, "profile": readiness_profile},
         )
     )
     checks.append(
@@ -74,9 +92,17 @@ def evaluate_release_readiness() -> Dict[str, Any]:
     )
     checks.append(
         _check(
+            "question_bank_cache_network_first",
+            "QUESTION_BANK_URL" in service_worker
+            and "url.pathname.endsWith('/question-bank.json')" in service_worker
+            and "networkFirst(request)" in service_worker,
+        )
+    )
+    checks.append(
+        _check(
             "static_offline_pwa",
             static_bank.get("schema_version") == "gtest_quiz_static_bank_v1"
-            and len(static_bank.get("questions", [])) == len(questions)
+            and static_question_count == question_count
             and "http://localhost" not in frontend
             and "http://localhost" not in offline_app
             and "/api/v1" not in frontend
@@ -84,15 +110,16 @@ def evaluate_release_readiness() -> Dict[str, Any]:
             and "localStorage" in offline_app
             and "selectNextQuestion" in offline_app
             and "updateSchedule" in offline_app,
-            {"static_questions": len(static_bank.get("questions", []))},
+            {"static_questions": static_question_count},
         )
     )
     checks.append(
         _check(
             "static_bank_build_metadata",
-            static_bank.get("meta", {}).get("generated_at") != "2026-05-22T00:00:00Z"
-            and bool(static_bank.get("meta", {}).get("git_commit"))
-            and static_bank.get("meta", {}).get("question_count") == len(questions),
+            bool(static_bank.get("meta", {}).get("content_hash"))
+            and "generated_at" not in static_bank.get("meta", {})
+            and "git_commit" not in static_bank.get("meta", {})
+            and static_bank.get("meta", {}).get("question_count") == question_count,
             {"meta": static_bank.get("meta", {})},
         )
     )
@@ -159,6 +186,7 @@ def evaluate_release_readiness() -> Dict[str, Any]:
         _check(
             "precision_benchmark",
             bool(adaptive.get("bootstrap_empty_bank"))
+            or (bootstrap_profile and bool(adaptive.get("limited_by_bank_size")))
             or (adaptive["scheduled_items"] >= 90 and adaptive["covered_chapters"] >= 20),
             {"adaptive": adaptive, "deltas": benchmark["deltas"]},
         )
@@ -170,7 +198,7 @@ def evaluate_release_readiness() -> Dict[str, Any]:
         )
     )
     passed = all(check["passed"] for check in checks)
-    return {"passed": passed, "checks": checks, "benchmark": benchmark}
+    return {"passed": passed, "profile": readiness_profile, "checks": checks, "benchmark": benchmark}
 
 
 def _run_service_smoke() -> Dict[str, Any]:

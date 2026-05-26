@@ -11,6 +11,7 @@ from pydantic import BaseModel
 
 from gtest_quiz.bank_epoch import DEFAULT_GEMINI_MODEL, DEFAULT_QUESTION_BANK_EPOCH
 from gtest_quiz.content_factory import (
+    CoverageTarget,
     PROVENANCE_PATH,
     QUESTION_BANK_PATH,
     REVIEW_QUEUE_PATH,
@@ -23,6 +24,10 @@ from gtest_quiz.content_factory import (
 from gtest_quiz.env import get_env, load_dotenv
 from gtest_quiz.meta import MetaManager
 from gtest_quiz.question_quality import validate_generated_question
+
+NEXT_QUESTION_BANK_PATH = Path("bank/question_bank.next.jsonl")
+NEXT_REVIEW_QUEUE_PATH = Path("bank/generated_review_queue.next.jsonl")
+NEXT_PROVENANCE_PATH = Path("bank/question_provenance.next.jsonl")
 
 
 class RefillConfig:
@@ -175,6 +180,12 @@ def _write_jsonl(path: Path, rows: list[Dict[str, Any]]) -> None:
     path.write_text("".join(json.dumps(row, ensure_ascii=False) + "\n" for row in rows), encoding="utf-8")
 
 
+def _clear_next_bank() -> None:
+    for path in (NEXT_QUESTION_BANK_PATH, NEXT_REVIEW_QUEUE_PATH, NEXT_PROVENANCE_PATH):
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text("", encoding="utf-8")
+
+
 def reset_active_bank(*, meta_path: str = "bank/meta.json", bank_version: str = DEFAULT_QUESTION_BANK_EPOCH) -> Dict[str, int]:
     old_count = len(load_existing_items(QUESTION_BANK_PATH))
     for path in (QUESTION_BANK_PATH, REVIEW_QUEUE_PATH, PROVENANCE_PATH):
@@ -223,6 +234,25 @@ def _replacement_candidates(config: RefillConfig) -> list[Dict[str, Any]]:
     return candidates
 
 
+def _replacement_targets(config: RefillConfig, candidates: list[Dict[str, Any]]) -> list[CoverageTarget]:
+    targets: list[CoverageTarget] = []
+    for row in candidates[: config.target_daily]:
+        provenance = row.get("provenance") if isinstance(row.get("provenance"), dict) else {}
+        concepts_raw = provenance.get("concepts") or row.get("concepts") or []
+        concepts = tuple(str(concept) for concept in concepts_raw if str(concept).strip())
+        targets.append(
+            CoverageTarget(
+                chapter_group=str(row.get("chapter_group", "")),
+                chapter_id=str(row.get("chapter_id", "")),
+                current_count=0,
+                target_count=1,
+                priority=1.0,
+                concepts=concepts,
+            )
+        )
+    return targets
+
+
 def _drop_replaced_items(config: RefillConfig, replacement_count: int) -> int:
     if replacement_count <= 0:
         return 0
@@ -235,6 +265,56 @@ def _drop_replaced_items(config: RefillConfig, replacement_count: int) -> int:
     return len(drop_ids)
 
 
+def _swap_next_bank(*, config: RefillConfig, meta_path: str, stats: RefillStats, before_count: int) -> None:
+    from tools.validate_question_bank import validate_question_bank
+
+    errors = validate_question_bank(NEXT_QUESTION_BANK_PATH)
+    if errors:
+        raise RuntimeError("next question bank validation failed: " + "; ".join(errors[:5]))
+    for source, target in (
+        (NEXT_QUESTION_BANK_PATH, QUESTION_BANK_PATH),
+        (NEXT_REVIEW_QUEUE_PATH, REVIEW_QUEUE_PATH),
+        (NEXT_PROVENANCE_PATH, PROVENANCE_PATH),
+    ):
+        target.parent.mkdir(parents=True, exist_ok=True)
+        source.replace(target)
+
+    total_questions = len(load_existing_items(QUESTION_BANK_PATH))
+    meta = MetaManager(meta_path)
+    meta.load()
+    meta.meta["bank_version"] = config.bank_version
+    meta.meta["question_bank"] = {
+        "path": str(QUESTION_BANK_PATH),
+        "bank_version": config.bank_version,
+        "total_questions": total_questions,
+        "updated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+    }
+    meta.meta["content_factory"] = {
+        "last_refill_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+        "model": config.model_name,
+        "bank_version": config.bank_version,
+        "mode": config.mode,
+        "target_accepts": config.target_daily,
+        "generated": stats.generated,
+        "accepted": stats.accepted,
+        "queued_for_review": stats.queued_for_review,
+        "rejected": stats.rejected,
+        "duplicates": stats.duplicates,
+        "errors": stats.errors,
+        "api_call_count": stats.api_call_count,
+        "rate_limit_errors": stats.rate_limit_errors,
+        "reset_performed": True,
+        "old_active_question_count": before_count,
+        "deleted_question_count": before_count,
+        "new_active_question_count": total_questions,
+    }
+    meta.meta["last_chapter_id"] = None
+    rows = load_existing_items(QUESTION_BANK_PATH)
+    if rows:
+        meta.meta["last_chapter_id"] = str(rows[-1].get("chapter_id", ""))
+    meta.save()
+
+
 def run_refill(config: RefillConfig, meta_path: str = "bank/meta.json") -> RefillStats:
     load_dotenv()
     api_key = get_env("GEMINI_API_KEY")
@@ -244,9 +324,6 @@ def run_refill(config: RefillConfig, meta_path: str = "bank/meta.json") -> Refil
     before_count = len(load_existing_items(QUESTION_BANK_PATH))
     reset_info = {"old_active_question_count": before_count, "deleted_question_count": 0, "new_active_question_count": before_count}
     reset_requested = config.reset_question_bank or config.mode == "reset_and_seed"
-    if reset_requested:
-        reset_info = reset_active_bank(meta_path=meta_path, bank_version=config.bank_version)
-        before_count = 0
 
     meta = MetaManager(meta_path)
     meta.load()
@@ -267,6 +344,21 @@ def run_refill(config: RefillConfig, meta_path: str = "bank/meta.json") -> Refil
         sleep_seconds=config.sleep_seconds_on_429,
     )
     allow_growth = config.mode in {"daily", "replace"}
+    question_bank_path = QUESTION_BANK_PATH
+    review_queue_path = REVIEW_QUEUE_PATH
+    provenance_path = PROVENANCE_PATH
+    update_meta = True
+    explicit_targets = None
+    if reset_requested:
+        _clear_next_bank()
+        question_bank_path = NEXT_QUESTION_BANK_PATH
+        review_queue_path = NEXT_REVIEW_QUEUE_PATH
+        provenance_path = NEXT_PROVENANCE_PATH
+        update_meta = False
+        allow_growth = True
+    elif config.mode == "replace":
+        explicit_targets = _replacement_targets(config, _replacement_candidates(config))
+
     factory = ContentFactory(
         FactoryConfig(
             model_name=config.model_name,
@@ -277,15 +369,34 @@ def run_refill(config: RefillConfig, meta_path: str = "bank/meta.json") -> Refil
             bank_version=config.bank_version,
             mode=config.mode,
             max_runtime_minutes=config.max_runtime_minutes,
+            update_meta=update_meta,
+            explicit_targets=explicit_targets,
+            question_bank_path=question_bank_path,
+            review_queue_path=review_queue_path,
+            provenance_path=provenance_path,
         ),
         generator,
     )
     stats = RefillStats.from_factory(factory.run(meta_path=meta_path), config=config)
-    if config.mode == "replace":
+    if reset_requested:
+        if stats.accepted > 0:
+            _swap_next_bank(config=config, meta_path=meta_path, stats=stats, before_count=before_count)
+            reset_info = {
+                "old_active_question_count": before_count,
+                "deleted_question_count": before_count,
+                "new_active_question_count": len(load_existing_items(QUESTION_BANK_PATH)),
+            }
+        else:
+            reset_info = {
+                "old_active_question_count": before_count,
+                "deleted_question_count": 0,
+                "new_active_question_count": before_count,
+            }
+    elif config.mode == "replace":
         _drop_replaced_items(config, stats.accepted)
     stats.api_call_count = generator.api_call_count
     stats.rate_limit_errors = generator.rate_limit_errors
-    stats.reset_performed = reset_requested
+    stats.reset_performed = bool(reset_requested and stats.accepted > 0)
     stats.old_active_question_count = reset_info["old_active_question_count"]
     stats.deleted_question_count = reset_info["deleted_question_count"]
     stats.active_question_count_before = before_count

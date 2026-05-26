@@ -49,6 +49,7 @@ jobs:
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           GEMINI_MODEL: ${{ vars.GEMINI_MODEL || 'gemini-3.5-flash' }}
+          ENFORCE_GEMINI35: ${{ vars.ENFORCE_GEMINI35 || 'true' }}
           QUESTION_BANK_EPOCH: ${{ vars.QUESTION_BANK_EPOCH || 'gemini35_v1' }}
           GENERATION_MODE: ${{ github.event_name == 'workflow_dispatch' && inputs.mode || 'daily' }}
           GENERATION_TARGET: ${{ github.event_name == 'workflow_dispatch' && inputs.target || '' }}
@@ -60,7 +61,17 @@ jobs:
           RESET_QUESTION_BANK: ${{ github.event_name == 'workflow_dispatch' && inputs.mode == 'reset_and_seed' && 'true' || 'false' }}
           PYTHONPATH: ${{ github.workspace }}
         run: |
+          echo "GEMINI_MODEL=$GEMINI_MODEL"
+          echo "ENFORCE_GEMINI35=$ENFORCE_GEMINI35"
+          if [ "$GEMINI_MODEL" != "gemini-3.5-flash" ]; then
+            echo "::warning::GEMINI_MODEL is $GEMINI_MODEL; expected gemini-3.5-flash"
+            if [ "$ENFORCE_GEMINI35" = "true" ]; then
+              echo "::error::ENFORCE_GEMINI35=true rejects non-gemini-3.5-flash models"
+              exit 1
+            fi
+          fi
           python tools/auto_refill_quality.py --mode "$GENERATION_MODE" --target "$GENERATION_TARGET" | tee refill-result.json
+          python tools/assert_refill_result.py refill-result.json
 
       - name: Validate generated content
         env:
@@ -82,6 +93,7 @@ jobs:
           git add bank/question_provenance.jsonl || true
           git add frontend/src/question-bank.json || true
           git add frontend/src/offline-app.js || true
+          git add frontend/src/service-worker.js || true
           git add frontend/src/pwa-icon-180.png frontend/src/pwa-icon-192.png frontend/src/pwa-icon-512.png || true
 
           echo "updated_files=$(git diff --cached --name-only | tr '\n' ' ')"

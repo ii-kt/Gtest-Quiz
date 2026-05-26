@@ -1,11 +1,11 @@
 from __future__ import annotations
 
 import json
-import subprocess
 import struct
 import sys
 import zlib
-from datetime import datetime, timezone
+import hashlib
+import re
 from pathlib import Path
 from typing import Any, Dict, List
 
@@ -19,6 +19,7 @@ from gtest_quiz.bank_epoch import current_bank_version
 BANK_PATH = ROOT / "bank/question_bank.jsonl"
 FRONTEND = ROOT / "frontend/src"
 STATIC_BANK_PATH = FRONTEND / "question-bank.json"
+SERVICE_WORKER_PATH = FRONTEND / "service-worker.js"
 META_PATH = ROOT / "bank/meta.json"
 
 
@@ -55,29 +56,62 @@ def load_questions() -> List[Dict[str, Any]]:
     return questions
 
 
-def write_static_bank() -> int:
+def _canonical_content(questions: List[Dict[str, Any]], bank_version: str) -> str:
+    return json.dumps(
+        {"bank_version": bank_version, "questions": questions},
+        ensure_ascii=False,
+        sort_keys=True,
+        separators=(",", ":"),
+    )
+
+
+def _write_text_if_changed(path: Path, text: str) -> bool:
+    if path.exists() and path.read_text(encoding="utf-8") == text:
+        return False
+    path.write_text(text, encoding="utf-8")
+    return True
+
+
+def update_service_worker_cache_name(bank_version: str, content_hash: str) -> str:
+    cache_name = f"gtest-quiz-static-{bank_version}-{content_hash[:12]}"
+    worker = SERVICE_WORKER_PATH.read_text(encoding="utf-8")
+    updated = re.sub(
+        r"const CACHE_NAME = '[^']+';",
+        f"const CACHE_NAME = '{cache_name}';",
+        worker,
+        count=1,
+    )
+    if updated != worker:
+        SERVICE_WORKER_PATH.write_text(updated, encoding="utf-8")
+    return cache_name
+
+
+def write_static_bank() -> Dict[str, Any]:
     questions = load_questions()
     bank_version = load_bank_version()
-    git_commit = subprocess.run(
-        ["git", "rev-parse", "--short", "HEAD"],
-        cwd=ROOT,
-        capture_output=True,
-        text=True,
-        check=False,
-    ).stdout.strip()
+    content_hash = hashlib.sha256(_canonical_content(questions, bank_version).encode("utf-8")).hexdigest()
     payload = {
         "schema_version": "gtest_quiz_static_bank_v1",
         "meta": {
-            "generated_at": datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z"),
-            "git_commit": git_commit,
             "source": "bank/question_bank.jsonl",
             "question_count": len(questions),
             "bank_version": bank_version,
+            "content_hash": content_hash,
         },
         "questions": questions,
     }
-    STATIC_BANK_PATH.write_text(json.dumps(payload, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
-    return len(questions)
+    changed = _write_text_if_changed(
+        STATIC_BANK_PATH,
+        json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(",", ":")),
+    )
+    cache_name = update_service_worker_cache_name(bank_version, content_hash)
+    return {
+        "questions": len(questions),
+        "bank_version": bank_version,
+        "content_hash": content_hash,
+        "cache_name": cache_name,
+        "static_bank_changed": changed,
+    }
 
 
 def png_chunk(kind: bytes, data: bytes) -> bytes:
@@ -115,10 +149,11 @@ def write_icon(path: Path, size: int) -> None:
 
 
 def main() -> None:
-    count = write_static_bank()
+    result = write_static_bank()
     for size in (180, 192, 512):
         write_icon(FRONTEND / f"pwa-icon-{size}.png", size)
-    print(json.dumps({"questions": count, "icons": [180, 192, 512]}, ensure_ascii=False))
+    result["icons"] = [180, 192, 512]
+    print(json.dumps(result, ensure_ascii=False))
 
 
 if __name__ == "__main__":

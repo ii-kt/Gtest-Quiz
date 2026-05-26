@@ -44,7 +44,7 @@ The active learner-facing product is the static offline PWA in `frontend/src/`. 
 
 ## Phase 5: Productization and Precision
 - One-click learner sessions, hashed session tokens, session expiry, refresh revocation, and idempotent SQLite migrations
-- Static offline PWA frontend with service worker, cached `question-bank.json`, device-local learning state, and file-based export/import
+- Static offline PWA frontend with service worker, network-first `question-bank.json` updates, device-local learning state, and file-based export/import
 - Observability across FastAPI and stdlib adapters: request IDs, latency metrics, structured logs, audit events
 - Deployment profiles for local, classroom, and hosted operation
 - Adaptive policy compared against random and chapter-balanced baselines with `/learning/policy` A/B hooks

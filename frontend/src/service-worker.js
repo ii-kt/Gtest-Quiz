@@ -1,8 +1,8 @@
-const CACHE_NAME = 'gtest-quiz-static-v6';
+const CACHE_NAME = 'gtest-quiz-static-gemini35_v1-73bee5c73f87';
+const QUESTION_BANK_URL = './question-bank.json';
 const SHELL = [
   './index.html',
   './offline-app.js',
-  './question-bank.json',
   './manifest.webmanifest',
   './pwa-icon.svg',
   './pwa-icon-180.png',
@@ -56,6 +56,12 @@ self.addEventListener('fetch', (event) => {
   if (request.method !== 'GET') return;
   const url = new URL(request.url);
   if (url.origin !== self.location.origin) return;
+
+  const questionBankPath = new URL(QUESTION_BANK_URL, self.location.href).pathname;
+  if (url.pathname.endsWith('/question-bank.json') || url.pathname.endsWith(questionBankPath)) {
+    event.respondWith(networkFirst(request));
+    return;
+  }
 
   if (request.mode === 'navigate' || url.pathname.endsWith('/index.html')) {
     event.respondWith(networkFirst(request));

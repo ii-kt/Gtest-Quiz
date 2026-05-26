@@ -22,7 +22,7 @@ G検定向けの完全オフライン静的PWAです。現行の推奨利用形�
 https://ii-kt.github.io/Gtest-Quiz/
 ```
 
-初回アクセス時に `index.html`、`offline-app.js`、`question-bank.json`、PWAアイコンをService Workerがキャッシュします。キャッシュ後は通信がなくても練習できます。
+初回アクセス時に `index.html`、`offline-app.js`、PWAアイコンをService Workerがキャッシュします。`question-bank.json` は毎回network-firstで取得し、GitHub Actionsで問題バンクが更新された端末では成功時にキャッシュを更新します。通信できない場合だけ最後に取得できた問題バンクへfallbackします。
 
 ## Data and Recovery
 
@@ -47,7 +47,7 @@ python tools/validate_question_bank.py
 python tools/build_static_pwa_assets.py
 ```
 
-`tools/build_static_pwa_assets.py` はビルド時刻とGit commitを `frontend/src/question-bank.json` の `meta` に書き込みます。
+`tools/build_static_pwa_assets.py` は `frontend/src/question-bank.json` に `content_hash` を書き込み、同じ問題データならtimestampだけの差分を作りません。Service Workerの `CACHE_NAME` もbank versionとcontent hashに合わせて更新します。
 
 GitHub Actionsの本線は `Auto Refill Question Bank (Quality Pipeline)` です。JST 09:17相当の `17 0 * * *` で毎日1回、`DAILY_TARGET=50` を初期値としてGemini 3.5 Flash世代の問題を追加生成します。手動実行では `reset_and_seed`、`seed`、`daily`、`replace` を選べます。legacyの `auto_refill.yml` は無効化済みで、二重起動しません。
 
@@ -76,7 +76,7 @@ python tools/release_readiness.py
 pytest tests/e2e -m e2e
 ```
 
-`tools/release_readiness.py` はPWA資産、問題バンク、answer-key safety、復旧経路、サービスsmoke、ベンチマーク、deployment profileを確認するrubricです。coverageそのものはpytest-covのCI gateで保証します。つまり `release_readiness.py` 単体は「全CIの代替」ではなく、CI release gateの一部です。
+`tools/release_readiness.py` はPWA資産、問題バンク、answer-key safety、復旧経路、サービスsmoke、ベンチマーク、deployment profileを確認するrubricです。デフォルトのproduction profileでは `PRODUCTION_MIN_QUESTIONS` 未満の問題バンクをrelease readyにしません。Gemini 3.5移行直後と初期seed中だけ `READINESS_PROFILE=bootstrap` を明示してbootstrap readinessとして確認します。coverageそのものはpytest-covのCI gateで保証します。つまり `release_readiness.py` 単体は「全CIの代替」ではなく、CI release gateの一部です。
 
 coverage対象は `.coveragerc` で現行保守対象に絞っています。FastAPI APIルータ、ASGIアダプタ、Streamlit UI、旧生成パイプラインは将来/legacy補助機能としてcoverage gateから外しています。
 

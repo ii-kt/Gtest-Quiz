@@ -17,6 +17,9 @@ from gtest_quiz.bank_epoch import current_bank_version, current_model_name
 from gtest_quiz.refill_pipeline import RefillConfig, run_refill
 
 
+EXPECTED_MODEL = "gemini-3.5-flash"
+
+
 def _env_int(name: str, default: int) -> int:
     try:
         return int(os.getenv(name, str(default)))
@@ -47,6 +50,7 @@ def _stats_payload(stats: Any) -> dict[str, Any]:
         "model_name": stats.model_name,
         "bank_version": stats.bank_version,
         "mode": stats.mode,
+        "target": getattr(stats, "target", 0),
         "reset_performed": stats.reset_performed,
         "old_active_question_count": stats.old_active_question_count,
         "deleted_question_count": stats.deleted_question_count,
@@ -64,6 +68,16 @@ def _stats_payload(stats: Any) -> dict[str, Any]:
     }
 
 
+def _enforce_model(model_name: str) -> None:
+    enforce = _env_bool("ENFORCE_GEMINI35", True)
+    if model_name == EXPECTED_MODEL:
+        return
+    message = f"GEMINI_MODEL is {model_name}; expected {EXPECTED_MODEL}"
+    print(f"warning: {message}", file=sys.stderr)
+    if enforce:
+        raise SystemExit(message)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Run the current Gemini question-bank generation pipeline.")
     parser.add_argument("--mode", choices=["daily", "seed", "reset_and_seed", "replace"], default=os.getenv("GENERATION_MODE", "daily"))
@@ -71,8 +85,13 @@ def main() -> None:
     args = parser.parse_args()
 
     model_name = current_model_name()
+    _enforce_model(model_name)
     bank_version = current_bank_version()
     target = _target_for_mode(args.mode, args.target)
+    print(
+        f"refill_config model_name={model_name} bank_version={bank_version} mode={args.mode} target={target}",
+        file=sys.stderr,
+    )
 
     config = RefillConfig(
         model_name=model_name,
@@ -85,7 +104,9 @@ def main() -> None:
         reset_question_bank=_env_bool("RESET_QUESTION_BANK") or args.mode == "reset_and_seed",
     )
     stats = run_refill(config)
-    print(json.dumps(_stats_payload(stats), ensure_ascii=False, indent=2))
+    payload = _stats_payload(stats)
+    payload["target"] = target
+    print(json.dumps(payload, ensure_ascii=False, indent=2))
 
 
 if __name__ == "__main__":

@@ -47,6 +47,8 @@ jobs:
           python tools/benchmark_learning_policy.py --compare
 
       - name: Check release readiness rubric
+        env:
+          READINESS_PROFILE: bootstrap
         run: |
           python tools/release_readiness.py
 

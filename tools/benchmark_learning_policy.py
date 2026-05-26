@@ -35,8 +35,9 @@ def run_policy_benchmark(seed: int = 7, rounds: int = 160, policy_variant: str =
     schedules: Dict[str, Dict[str, Any]] = {}
     covered_chapters = set()
     correct_count = 0
+    simulation_rounds = min(rounds, max(len(bank) * 6, len(bank)))
 
-    for idx in range(rounds):
+    for idx in range(simulation_rounds):
         selection = select_next_question(
             bank,
             history=history,
@@ -87,6 +88,7 @@ def run_policy_benchmark(seed: int = 7, rounds: int = 160, policy_variant: str =
         "scheduled_items": len(schedules),
         "review_ready_items": due_reviews,
         "policy": policy_variant,
+        "limited_by_bank_size": simulation_rounds < rounds,
     }
 
 

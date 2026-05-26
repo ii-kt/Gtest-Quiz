@@ -59,6 +59,9 @@ def test_static_question_bank_asset_matches_source_bank():
     assert bank["meta"]["question_count"] == source_count
     assert len(bank["questions"]) == source_count
     assert bank["meta"]["bank_version"] == "gemini35_v1"
+    assert bank["meta"]["content_hash"]
+    assert "generated_at" not in bank["meta"]
+    assert "git_commit" not in bank["meta"]
     if bank["questions"]:
         first = bank["questions"][0]
         assert {"id", "question", "choices", "correct_index", "explanation", "chapter_id", "bank_version"} <= set(first)
@@ -83,7 +86,11 @@ def test_frontend_pwa_assets_exist():
 
     worker_text = worker.read_text(encoding="utf-8")
     assert "CACHE_NAME" in worker_text
-    assert "gtest-quiz-static-v6" in worker_text
+    assert "gtest-quiz-static-gemini35_v1-" in worker_text
     assert "./offline-app.js" in worker_text
-    assert "./question-bank.json" in worker_text
+    shell_block = worker_text.split("const SHELL = [", 1)[1].split("];", 1)[0]
+    assert "./question-bank.json" not in shell_block
+    assert "QUESTION_BANK_URL" in worker_text
+    assert "url.pathname.endsWith('/question-bank.json')" in worker_text
+    assert "networkFirst(request)" in worker_text
     assert "cacheFirst" in worker_text

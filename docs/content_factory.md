@@ -6,13 +6,15 @@ The content factory is the current generation pipeline for maintaining the Gæ¤œå
 
 1. Build syllabus coverage targets from `bank/meta.json` and the existing question bank.
 2. Generate one schema-constrained candidate per target using `GeneratedQuestionSpec`.
-3. Validate structure, explanation length, difficulty, answer index, choice quality, and duplicates.
+3. Validate structure, explanation length, difficulty, answer index, choice quality, duplicates, and review score.
 4. Accept high-quality candidates into `bank/question_bank.jsonl`.
 5. Queue borderline or rejected candidates in `bank/generated_review_queue.jsonl`.
 6. Write provenance to `bank/question_provenance.jsonl` when items are accepted or promoted.
 7. Save refill metadata to `bank/meta.json` and rebuild `frontend/src/question-bank.json` for the PWA.
 
-The first pass fills chapters below the per-chapter floor. After all chapters reach the floor, daily refill continues with a small rotating target set, so a full 55 chapter x 10 question bank still receives new questions.
+`reset_and_seed` is transactional: generation writes to `.next` JSONL files first, validates them, and only swaps them into the active bank after at least one accepted item passes validation. A failed reset does not destroy the current active bank. `replace` identifies low-quality candidates first, preserves their chapter/concept targets, and only removes old questions after replacements are accepted.
+
+The first pass fills chapters below the per-chapter floor. After all chapters reach the floor, daily refill continues with a rotating target set, so a full 55 chapter x 10 question bank still receives new questions.
 
 ## Provenance
 
@@ -22,6 +24,8 @@ Accepted generated questions include:
 - prompt version
 - validator score
 - validator reasons
+- review score
+- review reasons
 - syllabus node
 - generated timestamp
 - concepts
@@ -40,7 +44,7 @@ Gemini-backed run:
 python tools/auto_refill_quality.py
 ```
 
-The scheduled GitHub Actions job runs once per day at `17 0 * * *` and uses `DAILY_TARGET=50` by default. Manual dispatch supports `reset_and_seed`, `seed`, `daily`, and `replace`. The default text generation model is `gemini-3.5-flash`; `GEMINI_MODEL` may override it explicitly, but there is no implicit fallback to older models.
+The scheduled GitHub Actions job runs once per day at `17 0 * * *` and uses `DAILY_TARGET=50` by default. Manual dispatch supports `reset_and_seed`, `seed`, `daily`, and `replace`. The default text generation model is `gemini-3.5-flash`; `GEMINI_MODEL` may override it explicitly, but there is no implicit fallback to older models. When `ENFORCE_GEMINI35=true`, any other model fails the workflow. `tools/assert_refill_result.py` fails CI when a run silently accepts zero items without an explicit quota/rate-limit reason.
 
 The active bank epoch is `gemini35_v1`. Old seed questions are removed from the active bank, and generated records must carry `bank_version`, `provenance.model`, and `provenance.bank_version`.
 
