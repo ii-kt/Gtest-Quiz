@@ -11,7 +11,17 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from gtest_quiz.bank_epoch import current_bank_version, current_model_name
-from gtest_quiz.content_factory import PROVENANCE_PATH, QUESTION_BANK_PATH, REVIEW_QUEUE_PATH, _jsonl_append, domain_for_chapter_group
+from gtest_quiz.content_factory import (
+    LEGAL_SOURCE_FIELDS,
+    PROVENANCE_PATH,
+    QUESTION_BANK_PATH,
+    REVIEW_QUEUE_PATH,
+    _jsonl_append,
+    domain_for_chapter_group,
+    is_legal_target,
+    review_generated_candidate,
+    shuffle_choices_for_record,
+)
 from gtest_quiz.question_quality import validate_generated_question
 
 
@@ -47,6 +57,15 @@ def promote(index: int, *, queue_path: Path = REVIEW_QUEUE_PATH, bank_path: Path
     validation = validate_generated_question(candidate, min_explanation_length=120)
     if not validation.is_valid:
         raise ValueError(f"candidate is not promotable: {validation.reasons}")
+    review_score, review_reasons = review_generated_candidate(candidate, min_explanation_length=120)
+    if review_score < 95 or review_reasons:
+        raise ValueError(f"candidate has review warnings: score={review_score}, reasons={review_reasons}")
+
+    choices, correct_index, shuffle_seed = shuffle_choices_for_record(
+        [str(choice) for choice in candidate["choices"]],
+        int(candidate["correct_index"]),
+        seed_material=f"{bank_version}:review:{index}:{candidate.get('question', '')}",
+    )
 
     record = {
         "id": f"REVIEW_{index}_{abs(hash(candidate.get('question', ''))) % 100000}",
@@ -58,8 +77,8 @@ def promote(index: int, *, queue_path: Path = REVIEW_QUEUE_PATH, bank_path: Path
         "chapter_id": target.get("chapter_id", candidate.get("syllabus_node", "")),
         "difficulty": candidate.get("difficulty", "standard"),
         "question": candidate["question"],
-        "choices": candidate["choices"],
-        "correct_index": int(candidate["correct_index"]),
+        "choices": choices,
+        "correct_index": correct_index,
         "explanation": candidate["explanation"],
         "syllabus": "G2024_v1.3",
         "provenance": {
@@ -69,11 +88,20 @@ def promote(index: int, *, queue_path: Path = REVIEW_QUEUE_PATH, bank_path: Path
             "bank_version": bank_version,
             "validator_score": validation.score,
             "validator_reasons": validation.reasons,
+            "review_score": review_score,
+            "review_reasons": review_reasons,
+            "accepted_with_review_warnings": False,
+            "choice_shuffle_seed": shuffle_seed,
             "syllabus_node": candidate.get("syllabus_node", target.get("chapter_id", "")),
             "concepts": candidate.get("concepts", []),
             "review_queue_index": index,
         },
     }
+    if is_legal_target(str(record["chapter_group"]), str(record["chapter_id"]), str(record["domain"])):
+        for field in LEGAL_SOURCE_FIELDS:
+            record[field] = str(candidate.get(field, "")).strip()
+            if not record[field]:
+                raise ValueError(f"legal/guideline candidate missing {field}")
     _jsonl_append(bank_path, record)
     _jsonl_append(PROVENANCE_PATH, {"id": record["id"], **record["provenance"]})
     return record

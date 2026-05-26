@@ -53,7 +53,7 @@ jobs:
           QUESTION_BANK_EPOCH: ${{ vars.QUESTION_BANK_EPOCH || 'gemini35_v1' }}
           GENERATION_MODE: ${{ github.event_name == 'workflow_dispatch' && inputs.mode || 'daily' }}
           GENERATION_TARGET: ${{ github.event_name == 'workflow_dispatch' && inputs.target || '' }}
-          DAILY_TARGET: ${{ vars.DAILY_TARGET || '50' }}
+          DAILY_TARGET: ${{ vars.DAILY_TARGET || '20' }}
           INITIAL_TARGET_PER_RUN: ${{ vars.INITIAL_TARGET_PER_RUN || '150' }}
           MAX_RETRY: ${{ vars.MAX_RETRY || '3' }}
           MIN_EXPLANATION_LENGTH: ${{ vars.MIN_EXPLANATION_LENGTH || '120' }}

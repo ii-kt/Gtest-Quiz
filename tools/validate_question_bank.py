@@ -40,13 +40,18 @@ REQUIRED_PROVENANCE = (
     "validator_reasons",
     "review_score",
     "review_reasons",
+    "accepted_with_review_warnings",
+    "choice_shuffle_seed",
     "syllabus_node",
     "concepts",
     "bank_version",
 )
 MIN_EXPLANATION_LENGTH = 120
+MIN_REVIEW_SCORE = 95
 LEGACY_ID_PREFIXES = ("Q_T_", "Q_L_")
 LEGACY_SOURCES = {"sample_seed", "content_factory"}
+LEGAL_TERMS = ("法律", "契約", "個人情報", "著作権", "知的財産", "ガイドライン", "倫理", "ガバナンス")
+LEGAL_SOURCE_FIELDS = ("source_url", "source_title", "source_version", "source_checked_at", "legal_basis")
 
 
 def _iter_jsonl(path: Path) -> Iterable[Dict[str, Any]]:
@@ -63,6 +68,35 @@ def _iter_jsonl(path: Path) -> Iterable[Dict[str, Any]]:
                 raise AssertionError(f"{path}:{line_no}: JSONL row must be an object")
             data["_line_no"] = line_no
             yield data
+
+
+def is_legal_row(row: Dict[str, Any]) -> bool:
+    text = f"{row.get('domain', '')} {row.get('chapter_group', '')} {row.get('chapter_id', '')}"
+    return row.get("domain") == "法律分野" or any(term in text for term in LEGAL_TERMS)
+
+
+def _distribution_errors(rows: List[Dict[str, Any]], path: Path) -> List[str]:
+    if len(rows) < 4:
+        return []
+    counts = Counter(int(row.get("correct_index", -1)) for row in rows if row.get("correct_index") in {0, 1, 2, 3})
+    errors: List[str] = []
+    missing = [index for index in range(4) if counts[index] == 0]
+    if missing:
+        errors.append(f"{path}: correct_index distribution has empty buckets: {missing}; counts={dict(counts)}")
+    full_counts = [counts[index] for index in range(4)]
+    if len(rows) >= 20 and max(full_counts) - min(full_counts) > max(5, len(rows) // 4):
+        errors.append(f"{path}: correct_index distribution is too skewed: counts={dict(counts)}")
+    for start in range(0, len(rows), 100):
+        window = rows[start : start + 100]
+        if len(window) < 20:
+            continue
+        window_counts = Counter(int(row.get("correct_index", -1)) for row in window if row.get("correct_index") in {0, 1, 2, 3})
+        expected = len(window) / 4
+        for index in range(4):
+            if window_counts[index] < expected * 0.5 or window_counts[index] > expected * 1.5:
+                errors.append(f"{path}: correct_index distribution is skewed in rows {start + 1}-{start + len(window)}: counts={dict(window_counts)}")
+                break
+    return errors
 
 
 def validate_question_bank(path: Path = BANK_PATH) -> List[str]:
@@ -113,6 +147,20 @@ def validate_question_bank(path: Path = BANK_PATH) -> List[str]:
             errors.append(f"{path}:{line_no}: provenance.model must be {expected_model}")
         if provenance.get("bank_version") != expected_bank_version:
             errors.append(f"{path}:{line_no}: provenance.bank_version must be {expected_bank_version}")
+        review_score = int(provenance.get("review_score", 0) or 0)
+        review_reasons = provenance.get("review_reasons", [])
+        if review_score < MIN_REVIEW_SCORE:
+            errors.append(f"{path}:{line_no}: review_score must be >= {MIN_REVIEW_SCORE}")
+        if review_reasons:
+            errors.append(f"{path}:{line_no}: review_reasons must be empty for active bank")
+        if provenance.get("accepted_with_review_warnings") is not False:
+            errors.append(f"{path}:{line_no}: accepted_with_review_warnings must be false")
+        if not str(provenance.get("choice_shuffle_seed", "")).strip():
+            errors.append(f"{path}:{line_no}: choice_shuffle_seed is required")
+        if is_legal_row(row):
+            for field in LEGAL_SOURCE_FIELDS:
+                if not str(row.get(field, "")).strip():
+                    errors.append(f"{path}:{line_no}: legal/guideline question missing {field}")
         created_at = str(row.get("created_at", "")).strip()
         if created_at:
             try:
@@ -132,6 +180,7 @@ def validate_question_bank(path: Path = BANK_PATH) -> List[str]:
         seen_questions.append(row)
         duplicate_index = build_duplicate_index(seen_questions)
 
+    errors.extend(_distribution_errors(rows, path))
     return errors
 
 
@@ -163,7 +212,21 @@ def main() -> None:
     errors = validate_question_bank() + validate_static_bank()
     if errors:
         raise SystemExit("\n".join(errors))
-    print(f"question bank ok: {BANK_PATH}")
+    rows = list(_iter_jsonl(BANK_PATH))
+    distribution = Counter(int(row.get("correct_index", -1)) for row in rows if row.get("correct_index") in {0, 1, 2, 3})
+    review_warning_count = sum(1 for row in rows if row.get("provenance", {}).get("review_reasons"))
+    print(
+        json.dumps(
+            {
+                "status": "ok",
+                "bank": str(BANK_PATH),
+                "questions": len(rows),
+                "correct_index_distribution": {str(index): distribution[index] for index in range(4)},
+                "review_warning_count": review_warning_count,
+            },
+            ensure_ascii=False,
+        )
+    )
 
 
 if __name__ == "__main__":

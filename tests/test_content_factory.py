@@ -8,6 +8,7 @@ from gtest_quiz.content_factory import (
     GeneratedQuestionSpec,
     build_coverage_targets,
     decide_candidate,
+    shuffle_choices_for_record,
 )
 from gtest_quiz.meta import MetaManager
 from gtest_quiz.question_quality import build_duplicate_index
@@ -29,7 +30,7 @@ class StaticGenerator:
                 "入力データを削除するため",
             ],
             "correct_index": 0,
-            "explanation": "汎化性能は未知データに対する性能を示すため、訓練データだけでは見えない過学習を検出するうえで重要である。",
+            "explanation": "正解理由は、汎化性能が未知データに対する性能を示し、訓練データだけでは見えない過学習を検出するために重要だからである。不正解理由として、暗号化、重み固定、入力削除はいずれも性能評価の目的ではなく、汎化性能の確認とは異なる。",
             "difficulty": "standard",
             "syllabus_node": "10. モデルの選択・評価",
             "concepts": ["汎化性能", "評価"],
@@ -42,7 +43,7 @@ def test_decide_candidate_routes_duplicates():
         "question": "ニューラルネットワークにおける活性化関数の役割は何か。",
         "choices": ["線形性を維持する", "非線形性を導入する", "計算量を削減する", "重みを初期化する"],
         "correct_index": 1,
-        "explanation": "活性化関数は非線形性を導入し、モデルが複雑な関係を学習できるようにするために重要である。",
+        "explanation": "正解理由は、活性化関数が非線形性を導入し、モデルが複雑な関係を学習できるようにするためである。不正解理由として、線形性維持、計算量削減、重み初期化は活性化関数の主目的ではない。",
         "difficulty": "standard",
     }
     duplicate_index = build_duplicate_index([data])
@@ -66,6 +67,21 @@ def test_coverage_targets_prioritize_deficits(tmp_path: Path):
     targets = build_coverage_targets(meta, [{"chapter_id": "A"}, {"chapter_id": "A"}], per_chapter_floor=3)
     assert targets[0].chapter_id == "B"
     assert targets[0].priority > targets[1].priority
+
+
+def test_choice_shuffle_recomputes_correct_index():
+    choices = ["correct", "wrong-a", "wrong-b", "wrong-c"]
+    shuffled, correct_index, seed = shuffle_choices_for_record(
+        choices,
+        0,
+        seed_material="unit-test",
+        desired_correct_index=3,
+    )
+
+    assert shuffled[correct_index] == "correct"
+    assert correct_index == 3
+    assert seed
+    assert set(shuffled) == set(choices)
 
 
 def test_coverage_targets_continue_after_floor_is_met(tmp_path: Path):
@@ -124,8 +140,11 @@ def test_content_factory_accepts_and_writes_provenance(tmp_path: Path):
     assert written["provenance"]["model"] == "gemini-3.5-flash"
     assert written["provenance"]["bank_version"] == "gemini35_v1"
     assert written["provenance"]["validator_score"] >= 75
-    assert written["provenance"]["review_score"] >= 75
-    assert "review_reasons" in written["provenance"]
+    assert written["provenance"]["review_score"] >= 95
+    assert written["provenance"]["review_reasons"] == []
+    assert written["provenance"]["accepted_with_review_warnings"] is False
+    assert written["provenance"]["choice_shuffle_seed"]
+    assert 0 <= written["correct_index"] <= 3
     assert provenance.exists()
     updated_meta = json.loads(meta_path.read_text(encoding="utf-8"))
     assert updated_meta["bank_version"] == "gemini35_v1"

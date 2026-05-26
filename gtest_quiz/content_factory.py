@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import time
 import hashlib
+import random
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
@@ -27,6 +28,8 @@ QUESTION_BANK_PATH = Path("bank/question_bank.jsonl")
 REVIEW_QUEUE_PATH = Path("bank/generated_review_queue.jsonl")
 PROVENANCE_PATH = Path("bank/question_provenance.jsonl")
 LEGAL_CHAPTER_GROUPS = {"AIに関する法律と契約", "AI倫理・AIガバナンス"}
+LEGAL_TERMS = ("法律", "契約", "個人情報", "著作権", "知的財産", "ガイドライン", "倫理", "ガバナンス")
+LEGAL_SOURCE_FIELDS = ("source_url", "source_title", "source_version", "source_checked_at", "legal_basis")
 
 
 class GeneratedQuestionSpec(BaseModel):
@@ -38,6 +41,11 @@ class GeneratedQuestionSpec(BaseModel):
     syllabus_node: str = Field(min_length=1)
     concepts: List[str] = Field(default_factory=list)
     source_hint: str = ""
+    source_url: str = ""
+    source_title: str = ""
+    source_version: str = ""
+    source_checked_at: str = ""
+    legal_basis: str = ""
 
 
 class QuestionGenerator(Protocol):
@@ -51,7 +59,7 @@ class FactoryConfig:
     prompt_version: str = PROMPT_VERSION
     target_accepts: int = 80
     min_explanation_length: int = 120
-    review_threshold: int = 75
+    review_threshold: int = 95
     max_attempts_per_target: int = 3
     per_chapter_floor: int = 10
     allow_over_floor_growth: bool = True
@@ -113,6 +121,11 @@ def domain_for_chapter_group(chapter_group: str) -> str:
     return "法律分野" if chapter_group in LEGAL_CHAPTER_GROUPS else "技術分野"
 
 
+def is_legal_target(chapter_group: str, chapter_id: str = "", domain: str = "") -> bool:
+    text = f"{domain} {chapter_group} {chapter_id}"
+    return domain == "法律分野" or any(term in text for term in LEGAL_TERMS)
+
+
 def build_generation_prompt(target: CoverageTarget, prompt_version: str = PROMPT_VERSION) -> str:
     concept_hint = ", ".join(target.concepts) if target.concepts else "chapter core concepts"
     return f"""
@@ -131,6 +144,7 @@ prompt_version: {prompt_version}
 - explanation は120文字以上
 - explanation は「正解理由」と「不正解理由」または誤答との差分を含める
 - syllabus_node には対象項目名を入れる
+- 法律・倫理・ガイドライン系の問題では source_url/source_title/source_version/source_checked_at/legal_basis に公式出典を入れる
 
 対象大分類: {target.chapter_group}
 対象項目: {target.chapter_id}
@@ -235,23 +249,29 @@ def decide_candidate(
     duplicate_index: Any,
     min_explanation_length: int,
     review_threshold: int,
+    target: CoverageTarget | None = None,
 ) -> CandidateDecision:
     validation = validate_generated_question(data, min_explanation_length=min_explanation_length)
-    review_score, review_reasons = review_generated_candidate(data, min_explanation_length=min_explanation_length)
+    review_score, review_reasons = review_generated_candidate(data, target=target, min_explanation_length=min_explanation_length)
     duplicate = is_probable_duplicate(str(data.get("question", "")), duplicate_index)
     reasons = [*validation.reasons, *review_reasons]
     if duplicate:
         reasons.append("probable duplicate")
     if duplicate:
         return CandidateDecision("duplicate", validation, duplicate, reasons, review_score, review_reasons)
-    if validation.is_valid and review_score >= review_threshold:
+    if validation.is_valid and review_score >= review_threshold and not review_reasons:
         return CandidateDecision("accept", validation, duplicate, reasons, review_score, review_reasons)
     if validation.score >= review_threshold or review_score >= review_threshold:
         return CandidateDecision("review", validation, duplicate, reasons, review_score, review_reasons)
     return CandidateDecision("reject", validation, duplicate, reasons, review_score, review_reasons)
 
 
-def review_generated_candidate(data: Dict[str, Any], *, min_explanation_length: int = 120) -> tuple[int, List[str]]:
+def review_generated_candidate(
+    data: Dict[str, Any],
+    *,
+    target: CoverageTarget | None = None,
+    min_explanation_length: int = 120,
+) -> tuple[int, List[str]]:
     score = 100
     reasons: List[str] = []
     choices = [str(choice).strip() for choice in data.get("choices", [])]
@@ -259,6 +279,11 @@ def review_generated_candidate(data: Dict[str, Any], *, min_explanation_length: 
     explanation = str(data.get("explanation", ""))
     concepts = [str(concept).strip() for concept in data.get("concepts", []) if str(concept).strip()]
     syllabus_node = str(data.get("syllabus_node", "")).strip()
+    legal_scope = bool(target and is_legal_target(target.chapter_group, target.chapter_id)) or is_legal_target(
+        str(data.get("chapter_group", "")),
+        str(data.get("chapter_id", "")),
+        str(data.get("domain", "")),
+    )
 
     if len(choices) != 4 or len(set(choices)) != 4:
         score -= 30
@@ -284,8 +309,32 @@ def review_generated_candidate(data: Dict[str, Any], *, min_explanation_length: 
     if len(str(data.get("question", ""))) < 18:
         score -= 20
         reasons.append("question is too short for concept checking")
+    if legal_scope:
+        missing_source = [field for field in LEGAL_SOURCE_FIELDS if not str(data.get(field, "")).strip()]
+        if missing_source:
+            score -= 100
+            reasons.append("legal or guideline question is missing official source metadata: " + ", ".join(missing_source))
 
     return max(0, score), reasons
+
+
+def shuffle_choices_for_record(
+    choices: List[str],
+    correct_index: int,
+    *,
+    seed_material: str,
+    desired_correct_index: int | None = None,
+) -> tuple[List[str], int, str]:
+    seed = hashlib.sha256(seed_material.encode("utf-8")).hexdigest()
+    correct_choice = choices[correct_index]
+    distractors = [choice for index, choice in enumerate(choices) if index != correct_index]
+    random.Random(seed).shuffle(distractors)
+    if desired_correct_index is None:
+        desired_correct_index = int(seed[:8], 16) % 4
+    desired_correct_index = max(0, min(3, desired_correct_index))
+    shuffled = list(distractors)
+    shuffled.insert(desired_correct_index, correct_choice)
+    return shuffled, desired_correct_index, seed[:16]
 
 
 def to_question_record(
@@ -296,7 +345,14 @@ def to_question_record(
     decision: CandidateDecision,
 ) -> Dict[str, Any]:
     stamp = int(time.time() * 1000)
-    return {
+    original_choices = [str(choice) for choice in data.get("choices", [])]
+    original_correct_index = int(data.get("correct_index", 0))
+    shuffled_choices, shuffled_correct_index, shuffle_seed = shuffle_choices_for_record(
+        original_choices,
+        original_correct_index,
+        seed_material=f"{config.bank_version}:{config.prompt_version}:{target.chapter_id}:{data.get('question', '')}:{stamp}",
+    )
+    record = {
         "id": f"AUTO_{stamp}_{abs(hash(data.get('question', ''))) % 100000}",
         "source": "gemini35_content_factory",
         "created_at": _now_iso(),
@@ -306,8 +362,8 @@ def to_question_record(
         "chapter_id": target.chapter_id,
         "difficulty": str(data.get("difficulty", "standard")),
         "question": str(data.get("question", "")),
-        "choices": [str(choice) for choice in data.get("choices", [])],
-        "correct_index": int(data.get("correct_index", 0)),
+        "choices": shuffled_choices,
+        "correct_index": shuffled_correct_index,
         "explanation": str(data.get("explanation", "")),
         "syllabus": "G2024_v1.3",
         "provenance": {
@@ -318,11 +374,17 @@ def to_question_record(
             "validator_reasons": decision.validation.reasons,
             "review_score": decision.review_score,
             "review_reasons": decision.review_reasons,
+            "accepted_with_review_warnings": False,
+            "choice_shuffle_seed": shuffle_seed,
             "syllabus_node": str(data.get("syllabus_node", target.chapter_id)),
             "concepts": list(data.get("concepts", [])),
             "generated_at": _now_iso(),
         },
     }
+    if is_legal_target(record["chapter_group"], record["chapter_id"], record["domain"]):
+        for field in LEGAL_SOURCE_FIELDS:
+            record[field] = str(data.get(field, "")).strip()
+    return record
 
 
 class ContentFactory:
@@ -380,6 +442,7 @@ class ContentFactory:
                     duplicate_index=duplicate_index,
                     min_explanation_length=self.config.min_explanation_length,
                     review_threshold=self.config.review_threshold,
+                    target=target,
                 )
                 if decision.action == "duplicate":
                     stats.duplicates += 1

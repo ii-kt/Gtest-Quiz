@@ -1,7 +1,7 @@
 {
   "version": 1,
   "created_at": "1970-01-01T00:00:00Z",
-  "updated_at": "2026-05-26T05:02:50Z",
+  "updated_at": "2026-05-26T05:25:32Z",
   "usage": {
     "total_questions": 0,
     "online_questions": 0,
@@ -301,7 +301,7 @@
   "question_bank": {
     "path": "bank/question_bank.jsonl",
     "bank_version": "gemini35_v1",
-    "total_questions": 23,
+    "total_questions": 12,
     "updated_at": "2026-05-26T05:02:50Z"
   },
   "content_factory": {
@@ -320,5 +320,22 @@
     "targets": 55,
     "api_call_count": 723,
     "rate_limit_errors": 721
+  },
+  "normalization": {
+    "kept": 12,
+    "dropped": 11,
+    "dropped_ids": [
+      "AUTO_1779762680749_3483",
+      "AUTO_1779762697397_42294",
+      "AUTO_1779762734830_83510",
+      "AUTO_1779762765320_42663",
+      "AUTO_1779762776586_23652",
+      "AUTO_1779762799312_76377",
+      "AUTO_1779762808476_7600",
+      "AUTO_1779762818301_38543",
+      "AUTO_1779762828532_36124",
+      "AUTO_1779762854653_51512",
+      "AUTO_1779770275296_99345"
+    ]
   }
 }

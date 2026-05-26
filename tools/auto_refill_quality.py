@@ -34,6 +34,34 @@ def _env_bool(name: str, default: bool = False) -> bool:
     return value.strip().lower() in {"1", "true", "yes", "on"}
 
 
+def _load_last_refill_result() -> dict[str, Any]:
+    path = ROOT / "bank/meta.json"
+    if not path.exists():
+        return {}
+    try:
+        meta = json.loads(path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError:
+        return {}
+    result = meta.get("last_refill_result") or meta.get("content_factory") or {}
+    return result if isinstance(result, dict) else {}
+
+
+def _adaptive_daily_target(default_target: int) -> int:
+    last = _load_last_refill_result()
+    accepted = int(last.get("accepted", 0) or 0)
+    rate_limit_errors = int(last.get("rate_limit_errors", 0) or 0)
+    errors = int(last.get("errors", 0) or 0)
+    previous_target = int(last.get("target_accepts", last.get("target", default_target)) or default_target)
+    if rate_limit_errors or (errors and accepted == 0):
+        basis = accepted if accepted > 0 else previous_target
+        return max(5, min(default_target, max(5, basis // 2)))
+    if accepted >= previous_target and errors == 0:
+        return min(50, previous_target + 5)
+    if accepted > 0:
+        return max(5, min(default_target, accepted + 5))
+    return default_target
+
+
 def _target_for_mode(mode: str, explicit_target: str | None) -> int:
     if explicit_target:
         try:
@@ -42,7 +70,8 @@ def _target_for_mode(mode: str, explicit_target: str | None) -> int:
             raise SystemExit(f"invalid target: {explicit_target}") from exc
     if mode in {"seed", "reset_and_seed"}:
         return _env_int("INITIAL_TARGET_PER_RUN", 150)
-    return _env_int("DAILY_TARGET", 50)
+    default_daily = _env_int("DAILY_TARGET", 20)
+    return _adaptive_daily_target(default_daily) if mode == "daily" else default_daily
 
 
 def _stats_payload(stats: Any) -> dict[str, Any]:

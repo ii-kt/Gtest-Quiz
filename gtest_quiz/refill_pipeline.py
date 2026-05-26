@@ -315,6 +315,27 @@ def _swap_next_bank(*, config: RefillConfig, meta_path: str, stats: RefillStats,
     meta.save()
 
 
+def _save_last_refill_result(*, config: RefillConfig, meta_path: str, stats: RefillStats) -> None:
+    meta = MetaManager(meta_path)
+    meta.load()
+    meta.meta["last_refill_result"] = {
+        "recorded_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+        "model": config.model_name,
+        "bank_version": config.bank_version,
+        "mode": config.mode,
+        "target_accepts": config.target_daily,
+        "generated": stats.generated,
+        "accepted": stats.accepted,
+        "queued_for_review": stats.queued_for_review,
+        "rejected": stats.rejected,
+        "duplicates": stats.duplicates,
+        "errors": stats.errors,
+        "api_call_count": stats.api_call_count,
+        "rate_limit_errors": stats.rate_limit_errors,
+    }
+    meta.save()
+
+
 def run_refill(config: RefillConfig, meta_path: str = "bank/meta.json") -> RefillStats:
     load_dotenv()
     api_key = get_env("GEMINI_API_KEY")
@@ -401,4 +422,5 @@ def run_refill(config: RefillConfig, meta_path: str = "bank/meta.json") -> Refil
     stats.deleted_question_count = reset_info["deleted_question_count"]
     stats.active_question_count_before = before_count
     stats.active_question_count_after = len(load_existing_items(QUESTION_BANK_PATH))
+    _save_last_refill_result(config=config, meta_path=meta_path, stats=stats)
     return stats

@@ -49,7 +49,7 @@ python tools/build_static_pwa_assets.py
 
 `tools/build_static_pwa_assets.py` は `frontend/src/question-bank.json` に `content_hash` を書き込み、同じ問題データならtimestampだけの差分を作りません。Service Workerの `CACHE_NAME` もbank versionとcontent hashに合わせて更新します。
 
-GitHub Actionsの本線は `Auto Refill Question Bank (Quality Pipeline)` です。JST 09:17相当の `17 0 * * *` で毎日1回、`DAILY_TARGET=50` を初期値としてGemini 3.5 Flash世代の問題を追加生成します。手動実行では `reset_and_seed`、`seed`、`daily`、`replace` を選べます。legacyの `auto_refill.yml` は無効化済みで、二重起動しません。
+GitHub Actionsの本線は `Auto Refill Question Bank (Quality Pipeline)` です。JST 09:17相当の `17 0 * * *` で毎日1回、`DAILY_TARGET=20` を初期値としてGemini 3.5 Flash世代の問題を追加生成します。daily targetは前回のaccepted/rate limit/API call結果を見て自動調整します。手動実行では `reset_and_seed`、`seed`、`daily`、`replace` を選べます。legacyの `auto_refill.yml` は無効化済みで、二重起動しません。
 
 ```bash
 python tools/auto_refill_quality.py
@@ -58,7 +58,7 @@ python tools/review_generated_queue.py --summary
 python tools/build_static_pwa_assets.py
 ```
 
-モデルは問題生成向けに `gemini-3.5-flash` を既定値にしています。`GEMINI_MODEL` が設定されている場合だけ上書きします。旧モデルへの暗黙fallbackはしません。生成結果はvalidationとreview queue/provenanceを通し、`bank/question_bank.jsonl`、`bank/meta.json`、`bank/generated_review_queue.jsonl`、`bank/question_provenance.jsonl`、`frontend/src/question-bank.json`、`frontend/src/offline-app.js` をcommit対象にします。
+モデルは問題生成向けに `gemini-3.5-flash` を既定値にしています。`GEMINI_MODEL` が設定されている場合だけ上書きします。旧モデルへの暗黙fallbackはしません。生成結果はvalidationとreview queue/provenanceを通し、review warningがない候補だけactive bankへ入れます。選択肢は生成後にシャッフルし、`correct_index` を再計算して `choice_shuffle_seed` をprovenanceへ残します。`bank/question_bank.jsonl`、`bank/meta.json`、`bank/generated_review_queue.jsonl`、`bank/question_provenance.jsonl`、`frontend/src/question-bank.json`、`frontend/src/offline-app.js` をcommit対象にします。
 
 現在のactive bank世代は `gemini35_v1` です。旧550問はactive bankから削除済みで、`reset_and_seed` によりGemini 3.5 Flash生成問題だけで再構築します。PWAは `bank_version` 変更時に旧localStorage学習履歴を自動初期化します。
 
