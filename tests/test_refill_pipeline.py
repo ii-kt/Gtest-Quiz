@@ -20,6 +20,7 @@ def test_refill_stats_wrap_factory_stats():
         errors=6,
         api_call_count=7,
         rate_limit_errors=1,
+        correct_index_distribution_generated={"0": 0, "1": 2, "2": 0, "3": 0},
     )
     stats = RefillStats.from_factory(factory_stats, config=RefillConfig(mode="daily"))
     assert stats.generated == 3
@@ -30,6 +31,7 @@ def test_refill_stats_wrap_factory_stats():
     assert stats.errors == 6
     assert stats.api_call_count == 7
     assert stats.rate_limit_errors == 1
+    assert stats.correct_index_distribution_generated == {"0": 0, "1": 2, "2": 0, "3": 0}
     assert stats.model_name == "gemini-3.5-flash"
     assert stats.bank_version == "gemini35_v1"
 

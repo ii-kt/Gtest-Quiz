@@ -1,6 +1,9 @@
 import json
 from pathlib import Path
 
+from gtest_quiz.content_factory import LEGAL_CHAPTER_GROUPS, LEGAL_SOURCE_FIELDS, domain_for_chapter_group
+from tools import build_static_pwa_assets
+
 
 def test_frontend_page_exists():
     html = Path("frontend/src/index.html")
@@ -22,6 +25,7 @@ def test_frontend_page_exists():
     assert "apiState" in text
     assert "dueNow" in text
     assert "trackedItems" in text
+    assert 'id="sourcePanel"' in text
     assert "placeholder" not in text
     assert "ユーザー名" not in text
     assert "パスワード" not in text
@@ -48,6 +52,8 @@ def test_frontend_is_static_offline_first():
     assert "importAccount" in script
     assert "applyBankVersionMigration" in script
     assert "bankResetNoticeSeen" in script
+    assert "renderSourcePanel" in script
+    assert "fetch(STATIC_BANK_URL, { cache: 'no-store' })" in script
     assert "learnerId" not in script
     assert "ensureLearner" not in script
 
@@ -66,6 +72,35 @@ def test_static_question_bank_asset_matches_source_bank():
         first = bank["questions"][0]
         assert {"id", "question", "choices", "correct_index", "explanation", "chapter_id", "bank_version"} <= set(first)
         assert len(first["choices"]) == 4
+
+
+def test_static_question_bank_keeps_legal_sources(tmp_path, monkeypatch):
+    group = next(iter(LEGAL_CHAPTER_GROUPS))
+    row = {
+        "id": "legal-source-test",
+        "bank_version": "gemini35_v1",
+        "domain": domain_for_chapter_group(group),
+        "chapter_group": group,
+        "chapter_id": "legal chapter",
+        "difficulty": "standard",
+        "question": "legal source test",
+        "choices": ["a", "b", "c", "d"],
+        "correct_index": 0,
+        "explanation": "legal source explanation",
+        "syllabus": "G2024_v1.3",
+        **{field: f"{field}-value" for field in LEGAL_SOURCE_FIELDS},
+    }
+    bank_path = tmp_path / "question_bank.jsonl"
+    meta_path = tmp_path / "meta.json"
+    bank_path.write_text(json.dumps(row, ensure_ascii=False) + "\n", encoding="utf-8")
+    meta_path.write_text(json.dumps({"bank_version": "gemini35_v1"}), encoding="utf-8")
+
+    monkeypatch.setattr(build_static_pwa_assets, "BANK_PATH", bank_path)
+    monkeypatch.setattr(build_static_pwa_assets, "META_PATH", meta_path)
+
+    [item] = build_static_pwa_assets.load_questions()
+    for field in LEGAL_SOURCE_FIELDS:
+        assert item[field] == f"{field}-value"
 
 
 def test_frontend_pwa_assets_exist():
@@ -92,5 +127,6 @@ def test_frontend_pwa_assets_exist():
     assert "./question-bank.json" not in shell_block
     assert "QUESTION_BANK_URL" in worker_text
     assert "url.pathname.endsWith('/question-bank.json')" in worker_text
-    assert "networkFirst(request)" in worker_text
+    assert "questionBankNetworkFirst(request)" in worker_text
+    assert "cache: 'no-store'" in worker_text
     assert "cacheFirst" in worker_text

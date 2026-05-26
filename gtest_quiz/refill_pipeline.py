@@ -75,6 +75,9 @@ class RefillStats:
         self.deleted_question_count = 0
         self.active_question_count_before = 0
         self.active_question_count_after = 0
+        self.correct_index_distribution_before = {str(index): 0 for index in range(4)}
+        self.correct_index_distribution_generated = {str(index): 0 for index in range(4)}
+        self.correct_index_distribution_after = {str(index): 0 for index in range(4)}
 
     @classmethod
     def from_factory(cls, stats: FactoryStats, *, config: RefillConfig) -> "RefillStats":
@@ -87,6 +90,7 @@ class RefillStats:
         item.queued_for_review = stats.queued_for_review
         item.api_call_count = stats.api_call_count
         item.rate_limit_errors = stats.rate_limit_errors
+        item.correct_index_distribution_generated = dict(stats.correct_index_distribution_generated)
         item.mode = config.mode
         item.model_name = config.model_name
         item.bank_version = config.bank_version
@@ -178,6 +182,15 @@ def _is_rate_limit_error(error: Exception) -> bool:
 def _write_jsonl(path: Path, rows: list[Dict[str, Any]]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text("".join(json.dumps(row, ensure_ascii=False) + "\n" for row in rows), encoding="utf-8")
+
+
+def _correct_index_distribution(rows: list[Dict[str, Any]]) -> Dict[str, int]:
+    counts = {str(index): 0 for index in range(4)}
+    for row in rows:
+        value = row.get("correct_index")
+        if isinstance(value, int) and str(value) in counts:
+            counts[str(value)] += 1
+    return counts
 
 
 def _clear_next_bank() -> None:
@@ -303,6 +316,9 @@ def _swap_next_bank(*, config: RefillConfig, meta_path: str, stats: RefillStats,
         "errors": stats.errors,
         "api_call_count": stats.api_call_count,
         "rate_limit_errors": stats.rate_limit_errors,
+        "correct_index_distribution_before": stats.correct_index_distribution_before,
+        "correct_index_distribution_generated": stats.correct_index_distribution_generated,
+        "correct_index_distribution_after": _correct_index_distribution(load_existing_items(QUESTION_BANK_PATH)),
         "reset_performed": True,
         "old_active_question_count": before_count,
         "deleted_question_count": before_count,
@@ -332,6 +348,9 @@ def _save_last_refill_result(*, config: RefillConfig, meta_path: str, stats: Ref
         "errors": stats.errors,
         "api_call_count": stats.api_call_count,
         "rate_limit_errors": stats.rate_limit_errors,
+        "correct_index_distribution_before": stats.correct_index_distribution_before,
+        "correct_index_distribution_generated": stats.correct_index_distribution_generated,
+        "correct_index_distribution_after": stats.correct_index_distribution_after,
     }
     meta.save()
 
@@ -342,7 +361,9 @@ def run_refill(config: RefillConfig, meta_path: str = "bank/meta.json") -> Refil
     if not api_key:
         raise RuntimeError("GEMINI_API_KEY is not set")
 
-    before_count = len(load_existing_items(QUESTION_BANK_PATH))
+    before_rows = load_existing_items(QUESTION_BANK_PATH)
+    before_count = len(before_rows)
+    before_distribution = _correct_index_distribution(before_rows)
     reset_info = {"old_active_question_count": before_count, "deleted_question_count": 0, "new_active_question_count": before_count}
     reset_requested = config.reset_question_bank or config.mode == "reset_and_seed"
 
@@ -356,6 +377,8 @@ def run_refill(config: RefillConfig, meta_path: str = "bank/meta.json") -> Refil
         stats.bank_version = config.bank_version
         stats.active_question_count_before = before_count
         stats.active_question_count_after = before_count
+        stats.correct_index_distribution_before = before_distribution
+        stats.correct_index_distribution_after = before_distribution
         return stats
 
     generator = GeminiQuestionGenerator(
@@ -421,6 +444,9 @@ def run_refill(config: RefillConfig, meta_path: str = "bank/meta.json") -> Refil
     stats.old_active_question_count = reset_info["old_active_question_count"]
     stats.deleted_question_count = reset_info["deleted_question_count"]
     stats.active_question_count_before = before_count
-    stats.active_question_count_after = len(load_existing_items(QUESTION_BANK_PATH))
+    after_rows = load_existing_items(QUESTION_BANK_PATH)
+    stats.active_question_count_after = len(after_rows)
+    stats.correct_index_distribution_before = before_distribution
+    stats.correct_index_distribution_after = _correct_index_distribution(after_rows)
     _save_last_refill_result(config=config, meta_path=meta_path, stats=stats)
     return stats

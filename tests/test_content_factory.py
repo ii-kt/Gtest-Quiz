@@ -133,6 +133,7 @@ def test_content_factory_accepts_and_writes_provenance(tmp_path: Path):
     )
     stats = factory.run(meta_path=str(meta_path))
     assert stats.accepted == 1
+    assert sum(stats.correct_index_distribution_generated.values()) == 1
     written = json.loads(bank.read_text(encoding="utf-8").splitlines()[0])
     assert written["domain"] == "技術分野"
     assert written["bank_version"] == "gemini35_v1"
@@ -149,6 +150,7 @@ def test_content_factory_accepts_and_writes_provenance(tmp_path: Path):
     updated_meta = json.loads(meta_path.read_text(encoding="utf-8"))
     assert updated_meta["bank_version"] == "gemini35_v1"
     assert updated_meta["content_factory"]["accepted"] == 1
+    assert sum(updated_meta["content_factory"]["correct_index_distribution_generated"].values()) == 1
     assert updated_meta["question_bank"]["total_questions"] == 1
 
 

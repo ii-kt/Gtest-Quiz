@@ -92,6 +92,9 @@ def _stats_payload(stats: Any) -> dict[str, Any]:
         "queued_for_review": stats.queued_for_review,
         "api_call_count": stats.api_call_count,
         "rate_limit_errors": stats.rate_limit_errors,
+        "correct_index_distribution_before": stats.correct_index_distribution_before,
+        "correct_index_distribution_generated": stats.correct_index_distribution_generated,
+        "correct_index_distribution_after": stats.correct_index_distribution_after,
         "active_question_count_after": stats.active_question_count_after,
         "new_active_question_count": stats.active_question_count_after,
     }

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'gtest-quiz-static-gemini35_v1-b20540cff400';
+const CACHE_NAME = 'gtest-quiz-static-gemini35_v1-87e7c678ac68';
 const QUESTION_BANK_URL = './question-bank.json';
 const SHELL = [
   './index.html',
@@ -51,6 +51,21 @@ async function networkFirst(request) {
   }
 }
 
+async function questionBankNetworkFirst(request) {
+  try {
+    const freshRequest = new Request(request, { cache: 'no-store' });
+    const response = await fetch(freshRequest);
+    if (response && response.ok) {
+      const cache = await caches.open(CACHE_NAME);
+      await cache.put(request, response.clone());
+    }
+    return response;
+  } catch (_error) {
+    const cached = await caches.match(request);
+    return cached || caches.match('./index.html');
+  }
+}
+
 self.addEventListener('fetch', (event) => {
   const request = event.request;
   if (request.method !== 'GET') return;
@@ -59,7 +74,7 @@ self.addEventListener('fetch', (event) => {
 
   const questionBankPath = new URL(QUESTION_BANK_URL, self.location.href).pathname;
   if (url.pathname.endsWith('/question-bank.json') || url.pathname.endsWith(questionBankPath)) {
-    event.respondWith(networkFirst(request));
+    event.respondWith(questionBankNetworkFirst(request));
     return;
   }
 

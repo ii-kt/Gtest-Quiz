@@ -469,6 +469,24 @@
         text-wrap: pretty;
       }
 
+      .source-panel {
+        display: grid;
+        gap: 6px;
+        max-width: 58rem;
+        margin-top: 14px;
+        padding-top: 12px;
+        border-top: 1px solid var(--line);
+        color: var(--muted);
+        font-size: .84rem;
+        line-height: 1.6;
+      }
+
+      .source-panel a {
+        color: var(--ink);
+        text-decoration-thickness: 1px;
+        text-underline-offset: 3px;
+      }
+
       .metric-label,
       .row-label {
         color: var(--muted);
@@ -781,6 +799,7 @@
           <div class="question-copy">
             <p class="eyebrow">Question</p>
             <h2 id="question">問題データを読み込み中です。</h2>
+            <div id="sourcePanel" class="source-panel" hidden></div>
           </div>
           <div id="choices" class="choice-grid"></div>
         </div>

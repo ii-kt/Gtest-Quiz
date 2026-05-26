@@ -15,6 +15,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from gtest_quiz.bank_epoch import current_bank_version
+from gtest_quiz.content_factory import LEGAL_SOURCE_FIELDS, is_legal_target
 
 BANK_PATH = ROOT / "bank/question_bank.jsonl"
 FRONTEND = ROOT / "frontend/src"
@@ -38,21 +39,23 @@ def load_questions() -> List[Dict[str, Any]]:
         if not line.strip():
             continue
         row = json.loads(line)
-        questions.append(
-            {
-                "id": row["id"],
-                "bank_version": row.get("bank_version", load_bank_version()),
-                "domain": row.get("domain", ""),
-                "chapter_group": row.get("chapter_group", ""),
-                "chapter_id": row.get("chapter_id", ""),
-                "difficulty": row.get("difficulty", "standard"),
-                "question": row.get("question", ""),
-                "choices": list(row.get("choices", [])),
-                "correct_index": int(row.get("correct_index", 0)),
-                "explanation": row.get("explanation", ""),
-                "syllabus": row.get("syllabus", ""),
-            }
-        )
+        item = {
+            "id": row["id"],
+            "bank_version": row.get("bank_version", load_bank_version()),
+            "domain": row.get("domain", ""),
+            "chapter_group": row.get("chapter_group", ""),
+            "chapter_id": row.get("chapter_id", ""),
+            "difficulty": row.get("difficulty", "standard"),
+            "question": row.get("question", ""),
+            "choices": list(row.get("choices", [])),
+            "correct_index": int(row.get("correct_index", 0)),
+            "explanation": row.get("explanation", ""),
+            "syllabus": row.get("syllabus", ""),
+        }
+        if is_legal_target(str(item["chapter_group"]), str(item["chapter_id"]), str(item["domain"])):
+            for field in LEGAL_SOURCE_FIELDS:
+                item[field] = row.get(field, "")
+        questions.append(item)
     return questions
 
 

@@ -49,6 +49,7 @@ const requestState = el('requestState');
 const authState = el('authState');
 const questionEl = el('question');
 const resultEl = el('result');
+const sourcePanelEl = el('sourcePanel');
 const choicesEl = el('choices');
 const chapterEl = el('chapter');
 const difficultyEl = el('difficulty');
@@ -497,12 +498,56 @@ function renderTimeline() {
   }
 }
 
+function sourceEntries(question) {
+  if (!question) return [];
+  const entries = [
+    ['source_title', '出典'],
+    ['source_version', '版'],
+    ['source_checked_at', '確認日'],
+    ['legal_basis', '根拠'],
+  ];
+  return entries
+    .map(([key, label]) => [label, String(question[key] || '').trim()])
+    .filter(([, value]) => value);
+}
+
+function renderSourcePanel(question) {
+  if (!sourcePanelEl) return;
+  const sourceUrl = String(question?.source_url || '').trim();
+  const entries = sourceEntries(question);
+  if (!sourceUrl && !entries.length) {
+    sourcePanelEl.hidden = true;
+    sourcePanelEl.textContent = '';
+    return;
+  }
+
+  sourcePanelEl.hidden = false;
+  sourcePanelEl.textContent = '';
+  for (const [label, value] of entries) {
+    const row = document.createElement('div');
+    row.textContent = `${label}: ${value}`;
+    sourcePanelEl.appendChild(row);
+  }
+  if (sourceUrl) {
+    const row = document.createElement('div');
+    row.textContent = 'URL: ';
+    const link = document.createElement('a');
+    link.href = sourceUrl;
+    link.target = '_blank';
+    link.rel = 'noopener noreferrer';
+    link.textContent = sourceUrl;
+    row.appendChild(link);
+    sourcePanelEl.appendChild(row);
+  }
+}
+
 function renderQuestion(selection) {
   current = selection.question;
   answered = false;
   choicesEl.innerHTML = '';
   chapterEl.textContent = [current.chapter_group, current.chapter_id].filter(Boolean).join(' / ');
   questionEl.textContent = current.question;
+  renderSourcePanel(current);
   difficultyEl.textContent = current.difficulty || '-';
   const reason = selection.learning?.reason || 'balanced_practice';
   reasonEl.textContent = reasonLabels[reason] || reason;
@@ -566,6 +611,7 @@ function startLearning() {
   if (!selection) {
     questionEl.textContent = '問題データを読み込めませんでした。';
     resultEl.textContent = 'question-bank.json を確認してください。';
+    renderSourcePanel(null);
     return;
   }
   renderQuestion(selection);
@@ -577,7 +623,7 @@ function startLearning() {
 async function loadQuestionBank() {
   setBusy(true);
   try {
-    const response = await fetch(STATIC_BANK_URL);
+    const response = await fetch(STATIC_BANK_URL, { cache: 'no-store' });
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     const payload = await response.json();
     bank = Array.isArray(payload) ? payload : payload.questions || [];
@@ -590,6 +636,7 @@ async function loadQuestionBank() {
     if (!bank.length) {
       questionEl.textContent = '新世代問題バンクの初期生成待ちです。';
       resultEl.textContent = 'GitHub Actionsのreset_and_seedを実行すると、Gemini 3.5 Flash生成問題がここに表示されます。';
+      renderSourcePanel(null);
       renderStats();
       renderTimeline();
       if (resetPerformed) showBankResetNotice();
@@ -602,6 +649,7 @@ async function loadQuestionBank() {
     apiState.dataset.tone = 'red';
     questionEl.textContent = '問題を読み込めませんでした。';
     resultEl.textContent = `${STATIC_BANK_URL} を同じ場所に配置してください。`;
+    renderSourcePanel(null);
   } finally {
     setBusy(false);
   }
@@ -621,6 +669,7 @@ function resetState() {
   current = null;
   answered = false;
   choicesEl.innerHTML = '';
+  renderSourcePanel(null);
   resultEl.textContent = 'リセットしました。';
   renderStats();
   renderTimeline();

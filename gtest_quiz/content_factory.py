@@ -84,6 +84,9 @@ class FactoryStats:
     targets: int = 0
     api_call_count: int = 0
     rate_limit_errors: int = 0
+    correct_index_distribution_generated: Dict[str, int] = field(
+        default_factory=lambda: {str(index): 0 for index in range(4)}
+    )
 
 
 @dataclass(frozen=True)
@@ -461,6 +464,9 @@ class ContentFactory:
                 _jsonl_append(self.config.provenance_path, {"id": record["id"], **record["provenance"]})
                 accepted_records.append(record)
                 stats.accepted += 1
+                key = str(record.get("correct_index", ""))
+                if key in stats.correct_index_distribution_generated:
+                    stats.correct_index_distribution_generated[key] += 1
                 duplicate_index = build_duplicate_index([*existing, *accepted_records])
                 break
 
@@ -487,6 +493,7 @@ class ContentFactory:
                 "targets": stats.targets,
                 "api_call_count": stats.api_call_count,
                 "rate_limit_errors": stats.rate_limit_errors,
+                "correct_index_distribution_generated": stats.correct_index_distribution_generated,
             }
             meta.meta["question_bank"] = {
                 "path": str(self.config.question_bank_path),
