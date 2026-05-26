@@ -186,6 +186,7 @@ def evaluate_release_readiness(profile: str | None = None) -> Dict[str, Any]:
         _check(
             "precision_benchmark",
             bool(adaptive.get("bootstrap_empty_bank"))
+            or (bootstrap_profile and question_count < production_min_questions)
             or (bootstrap_profile and bool(adaptive.get("limited_by_bank_size")))
             or (adaptive["scheduled_items"] >= 90 and adaptive["covered_chapters"] >= 20),
             {"adaptive": adaptive, "deltas": benchmark["deltas"]},

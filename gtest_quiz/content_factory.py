@@ -371,7 +371,8 @@ class ContentFactory:
                     stats.generated += 1
                 except Exception as e:
                     stats.errors += 1
-                    self._queue_error(target, str(e))
+                    if not _is_transient_generation_error(str(e)):
+                        self._queue_error(target, str(e))
                     continue
 
                 decision = decide_candidate(
@@ -401,7 +402,7 @@ class ContentFactory:
                 break
 
         if self.config.update_meta and (
-            stats.generated or stats.accepted or stats.queued_for_review or stats.rejected or stats.duplicates or stats.errors
+            stats.generated or stats.accepted or stats.queued_for_review or stats.rejected or stats.duplicates
         ):
             stats.api_call_count = int(getattr(self.generator, "api_call_count", stats.generated))
             stats.rate_limit_errors = int(getattr(self.generator, "rate_limit_errors", 0))
@@ -467,6 +468,11 @@ class ContentFactory:
                 "bank_version": self.config.bank_version,
             },
         )
+
+
+def _is_transient_generation_error(error: str) -> bool:
+    text = error.lower()
+    return "429" in text or "rate limit" in text or "quota" in text or "resource exhausted" in text
 
 
 def question_to_model(data: Dict[str, Any]) -> Question:
