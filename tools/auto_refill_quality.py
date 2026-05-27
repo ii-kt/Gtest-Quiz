@@ -15,9 +15,12 @@ if str(ROOT) not in sys.path:
 
 from gtest_quiz.bank_epoch import current_bank_version, current_model_name
 from gtest_quiz.refill_pipeline import RefillConfig, run_refill
+from tools.generate_coverage_report import build_coverage_report, write_coverage_report
 
 
 EXPECTED_MODEL = "gemini-3.5-flash"
+COMPLETE_TARGET_QUESTIONS_DEFAULT = 550
+EXPANDED_TARGET_QUESTIONS_DEFAULT = 1000
 
 
 def _env_int(name: str, default: int) -> int:
@@ -62,15 +65,44 @@ def _adaptive_daily_target(default_target: int) -> int:
     return default_target
 
 
+def _adaptive_seed_target(*, default_target: int, max_target: int, remaining: int) -> int:
+    last = _load_last_refill_result()
+    accepted = int(last.get("accepted", 0) or 0)
+    rate_limit_errors = int(last.get("rate_limit_errors", 0) or 0)
+    errors = int(last.get("errors", 0) or 0)
+    previous_target = int(last.get("target_accepts", last.get("target", default_target)) or default_target)
+    target = default_target
+    if rate_limit_errors or (errors and accepted == 0):
+        basis = accepted if accepted > 0 else previous_target
+        target = max(5, min(default_target, max(5, basis // 2)))
+    elif accepted >= previous_target and errors == 0:
+        target = min(max_target, previous_target + 5)
+    elif accepted > 0:
+        target = min(max_target, accepted + 5)
+    return max(0, min(target, remaining, max_target))
+
+
 def _target_for_mode(mode: str, explicit_target: str | None) -> int:
+    seed_default = _env_int("SEED_TARGET_DEFAULT", 15)
+    seed_max = _env_int("SEED_TARGET_MAX", 30)
+    complete_target = _env_int("COMPLETE_TARGET_QUESTIONS", COMPLETE_TARGET_QUESTIONS_DEFAULT)
+    expanded_target = _env_int("EXPANDED_TARGET_QUESTIONS", EXPANDED_TARGET_QUESTIONS_DEFAULT)
+    current_count = int(build_coverage_report().get("total_questions", 0))
+    target_goal = expanded_target if mode == "build_to_expanded" else complete_target
+    remaining = max(0, target_goal - current_count)
     if explicit_target:
         try:
-            return int(explicit_target)
+            explicit = int(explicit_target)
         except ValueError as exc:
             raise SystemExit(f"invalid target: {explicit_target}") from exc
+        if mode in {"seed", "reset_and_seed", "build_to_complete", "build_to_expanded"}:
+            return max(0, min(explicit, seed_max, remaining if mode.startswith("build_to_") else explicit))
+        return explicit
+    if mode in {"build_to_complete", "build_to_expanded"}:
+        return _adaptive_seed_target(default_target=seed_default, max_target=seed_max, remaining=remaining)
     if mode in {"seed", "reset_and_seed"}:
-        return _env_int("INITIAL_TARGET_PER_RUN", 150)
-    default_daily = _env_int("DAILY_TARGET", 20)
+        return _adaptive_seed_target(default_target=seed_default, max_target=seed_max, remaining=_env_int("INITIAL_TARGET_PER_RUN", seed_default))
+    default_daily = _env_int("DAILY_TARGET", 10)
     return _adaptive_daily_target(default_daily) if mode == "daily" else default_daily
 
 
@@ -112,13 +144,21 @@ def _enforce_model(model_name: str) -> None:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Run the current Gemini question-bank generation pipeline.")
-    parser.add_argument("--mode", choices=["daily", "seed", "reset_and_seed", "replace"], default=os.getenv("GENERATION_MODE", "daily"))
+    parser.add_argument(
+        "--mode",
+        choices=["daily", "seed", "reset_and_seed", "replace", "build_to_complete", "build_to_expanded", "validate_only"],
+        default=os.getenv("GENERATION_MODE", "daily"),
+    )
     parser.add_argument("--target", default=os.getenv("GENERATION_TARGET"))
     args = parser.parse_args()
 
     model_name = current_model_name()
     _enforce_model(model_name)
     bank_version = current_bank_version()
+    if args.mode == "validate_only":
+        report = write_coverage_report()
+        print(json.dumps({"mode": args.mode, "bank_version": bank_version, "coverage": report}, ensure_ascii=False, indent=2))
+        return
     target = _target_for_mode(args.mode, args.target)
     print(
         f"refill_config model_name={model_name} bank_version={bank_version} mode={args.mode} target={target}",
@@ -133,9 +173,11 @@ def main() -> None:
         max_runtime_minutes=_env_int("MAX_RUNTIME_MINUTES", 25),
         mode=args.mode,
         bank_version=bank_version,
+        per_chapter_floor=_env_int("MIN_PER_CHAPTER_COMPLETE", 10 if args.mode != "build_to_expanded" else 15),
         reset_question_bank=_env_bool("RESET_QUESTION_BANK") or args.mode == "reset_and_seed",
     )
     stats = run_refill(config)
+    write_coverage_report()
     payload = _stats_payload(stats)
     payload["target"] = target
     print(json.dumps(payload, ensure_ascii=False, indent=2))

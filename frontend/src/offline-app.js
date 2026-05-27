@@ -63,6 +63,9 @@ const dueNowEl = el('dueNow');
 const trackedItemsEl = el('trackedItems');
 const masteryList = el('masteryList');
 const timeline = el('timeline');
+const bankStatusEl = el('bankStatus');
+const chapterProgressListEl = el('chapterProgressList');
+const unlearnedChaptersEl = el('unlearnedChapters');
 
 function defaultState() {
   return {
@@ -376,6 +379,49 @@ function learningPlan() {
   };
 }
 
+function buildChapterProgress() {
+  const summary = buildQuestionSummary();
+  const chapters = {};
+  for (const question of bank) {
+    const item = chapters[question.chapter_id] || {
+      chapter_group: question.chapter_group || '',
+      chapter_id: question.chapter_id || '',
+      question_count: 0,
+      answered_count: 0,
+      correct_count: 0,
+      due_count: 0,
+      mastery_sum: 0,
+    };
+    const questionSummary = summary[question.id] || {};
+    const attempts = Number(questionSummary.attempts || 0);
+    const wrongs = Number(questionSummary.wrongs || 0);
+    item.question_count += 1;
+    if (attempts > 0) {
+      item.answered_count += 1;
+      item.correct_count += Math.max(0, attempts - wrongs);
+      item.mastery_sum += questionMastery(questionSummary, question.difficulty);
+    }
+    const due = parseDate(questionSummary.due_at);
+    if (due && due <= new Date()) item.due_count += 1;
+    chapters[question.chapter_id] = item;
+  }
+  return Object.values(chapters).map((item) => ({
+    ...item,
+    accuracy: item.answered_count ? item.correct_count / Math.max(1, state.answers.filter((row) => row.chapter_id === item.chapter_id).length) : 0,
+    mastery_estimate: item.answered_count ? item.mastery_sum / item.answered_count : 0,
+  })).sort((a, b) => (a.mastery_estimate - b.mastery_estimate) || (a.answered_count - b.answered_count) || a.chapter_id.localeCompare(b.chapter_id));
+}
+
+function currentReadinessProfile() {
+  const coverage = bankMeta.coverage || {};
+  const profiles = coverage.profiles || {};
+  for (const name of ['expanded', 'complete', 'beta', 'alpha', 'bootstrap']) {
+    if (profiles[name]?.passed) return name;
+  }
+  if (bank.length >= 100) return 'alpha';
+  return bank.length > 0 ? 'bootstrap' : 'bootstrap';
+}
+
 function selectNextQuestion() {
   if (!bank.length) return null;
   const summary = buildQuestionSummary();
@@ -460,6 +506,8 @@ function renderStats() {
   trackedItemsEl.textContent = String(learning.schedule.tracked_items);
   setScore();
   renderMastery(learning.weakest);
+  renderBankStatus();
+  renderChapterProgress();
 }
 
 function renderMastery(items) {
@@ -477,6 +525,64 @@ function renderMastery(items) {
       <div class="bar"><span style="width:${Math.round(mastery * 100)}%"></span></div>
     `;
     masteryList.appendChild(row);
+  }
+}
+
+function renderBankStatus() {
+  if (!bankStatusEl) return;
+  const coverage = bankMeta.coverage || {};
+  const profiles = coverage.profiles || {};
+  const completeTarget = Number(coverage.target_complete_questions || 550);
+  const expandedTarget = Number(coverage.target_expanded_questions || 1000);
+  const completeFloor = Number(profiles.complete?.chapters_meeting_floor || 0);
+  const expectedChapters = Number(coverage.expected_chapters || new Set(bank.map((question) => question.chapter_id)).size || 0);
+  const currentProfile = currentReadinessProfile();
+  bankStatusEl.innerHTML = `
+    <div class="status-grid">
+      <div class="status-chip"><span>現在</span><strong>${escapeHtml(currentProfile)}</strong></div>
+      <div class="status-chip"><span>問題数</span><strong>${bank.length} / ${completeTarget}</strong></div>
+      <div class="status-chip"><span>章カバー</span><strong>${Number(coverage.covered_chapters || 0)} / ${expectedChapters}</strong></div>
+      <div class="status-chip"><span>各章10問</span><strong>${completeFloor} / ${expectedChapters}</strong></div>
+      <div class="status-chip"><span>bank_version</span><strong>${escapeHtml(currentBankVersion() || '-')}</strong></div>
+      <div class="status-chip"><span>content_hash</span><strong>${escapeHtml(String(bankMeta.content_hash || '').slice(0, 12) || '-')}</strong></div>
+      <div class="status-chip"><span>expanded</span><strong>${bank.length} / ${expandedTarget}</strong></div>
+      <div class="status-chip"><span>学習済み</span><strong>${new Set(state.answers.map((row) => row.question_id)).size}</strong></div>
+    </div>
+  `;
+}
+
+function renderChapterProgress() {
+  const chapters = buildChapterProgress();
+  if (chapterProgressListEl) {
+    chapterProgressListEl.innerHTML = '';
+    if (!chapters.length) {
+      chapterProgressListEl.innerHTML = '<div class="empty">データ待機中</div>';
+    } else {
+      for (const item of chapters.slice(0, 12)) {
+        const row = document.createElement('div');
+        row.className = 'row';
+        row.innerHTML = `
+          <div class="row-label"><span title="${escapeHtml(item.chapter_id)}">${escapeHtml(item.chapter_id)}</span><strong>${item.answered_count}/${item.question_count} ${pct(item.accuracy)}</strong></div>
+          <div class="bar"><span style="width:${Math.round(clamp(item.mastery_estimate, 0, 1) * 100)}%"></span></div>
+          <div class="empty">due ${item.due_count} / mastery ${pct(item.mastery_estimate)}</div>
+        `;
+        chapterProgressListEl.appendChild(row);
+      }
+    }
+  }
+  if (unlearnedChaptersEl) {
+    const unlearned = chapters.filter((item) => item.answered_count === 0);
+    unlearnedChaptersEl.innerHTML = '';
+    if (!unlearned.length) {
+      unlearnedChaptersEl.innerHTML = '<div class="empty">未学習章はありません</div>';
+    } else {
+      for (const item of unlearned.slice(0, 12)) {
+        const row = document.createElement('div');
+        row.className = 'timeline';
+        row.innerHTML = `<span class="dot"></span><span title="${escapeHtml(item.chapter_id)}">${escapeHtml(item.chapter_id)}</span><strong>${item.question_count}</strong>`;
+        unlearnedChaptersEl.appendChild(row);
+      }
+    }
   }
 }
 

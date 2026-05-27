@@ -1,4 +1,5 @@
 import json
+import re
 from pathlib import Path
 
 from gtest_quiz.content_factory import (
@@ -21,6 +22,8 @@ class StaticGenerator:
 
     def generate(self, prompt: str, schema: type[GeneratedQuestionSpec]):
         self.count += 1
+        difficulty_match = re.search(r"Target difficulty:\s*(basic|standard|advanced)", prompt)
+        difficulty = difficulty_match.group(1) if difficulty_match else "standard"
         return {
             "question": f"汎化性能を確認する目的として最も適切なものはどれか。{self.count}",
             "choices": [
@@ -31,7 +34,7 @@ class StaticGenerator:
             ],
             "correct_index": 0,
             "explanation": "正解理由は、汎化性能が未知データに対する性能を示し、訓練データだけでは見えない過学習を検出するために重要だからである。不正解理由として、暗号化、重み固定、入力削除はいずれも性能評価の目的ではなく、汎化性能の確認とは異なる。",
-            "difficulty": "standard",
+            "difficulty": difficulty,
             "syllabus_node": "10. モデルの選択・評価",
             "concepts": ["汎化性能", "評価"],
             "source_hint": "test",
@@ -67,6 +70,7 @@ def test_coverage_targets_prioritize_deficits(tmp_path: Path):
     targets = build_coverage_targets(meta, [{"chapter_id": "A"}, {"chapter_id": "A"}], per_chapter_floor=3)
     assert targets[0].chapter_id == "B"
     assert targets[0].priority > targets[1].priority
+    assert targets[0].desired_difficulty in {"basic", "standard", "advanced"}
 
 
 def test_choice_shuffle_recomputes_correct_index():
@@ -152,6 +156,7 @@ def test_content_factory_accepts_and_writes_provenance(tmp_path: Path):
     assert updated_meta["content_factory"]["accepted"] == 1
     assert sum(updated_meta["content_factory"]["correct_index_distribution_generated"].values()) == 1
     assert updated_meta["question_bank"]["total_questions"] == 1
+    assert written["provenance"]["desired_difficulty"] == "standard"
 
 
 def test_content_factory_adds_daily_items_after_all_chapters_are_full(tmp_path: Path):
@@ -221,4 +226,6 @@ def test_review_queue_summary(tmp_path: Path):
         encoding="utf-8",
     )
     summary = summarize_queue(queue)
-    assert summary == {"total": 2, "by_decision": {"reject": 1, "review": 1}}
+    assert summary["total"] == 2
+    assert summary["by_decision"] == {"reject": 1, "review": 1}
+    assert summary["review_queue_total"] == 2

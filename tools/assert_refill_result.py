@@ -42,8 +42,8 @@ def assert_refill_result(result: Dict[str, Any]) -> List[str]:
         errors.append("errors > 0 and accepted == 0")
     if mode == "reset_and_seed" and accepted == 0:
         errors.append("reset_and_seed requires accepted >= 1")
-    if mode == "seed" and target > 0 and accepted == 0:
-        errors.append("seed with target > 0 requires accepted >= 1")
+    if mode in {"seed", "build_to_complete", "build_to_expanded"} and target > 0 and accepted == 0:
+        errors.append(f"{mode} with target > 0 requires accepted >= 1")
     if mode == "daily" and accepted == 0 and rate_limit_errors == 0:
         errors.append("daily accepted == 0 without a rate-limit/quota signal")
     if mode == "replace" and target > 0 and accepted == 0 and rate_limit_errors == 0:

@@ -15,10 +15,24 @@ on:
           - seed
           - reset_and_seed
           - replace
+          - build_to_complete
+          - build_to_expanded
+          - validate_only
       target:
         description: "Target accepted questions for this run"
         required: false
         default: ""
+      readiness_profile:
+        description: "Readiness profile to check after generation"
+        required: false
+        default: "bootstrap"
+        type: choice
+        options:
+          - bootstrap
+          - alpha
+          - beta
+          - complete
+          - expanded
 
 permissions:
   contents: write
@@ -53,8 +67,13 @@ jobs:
           QUESTION_BANK_EPOCH: ${{ vars.QUESTION_BANK_EPOCH || 'gemini35_v1' }}
           GENERATION_MODE: ${{ github.event_name == 'workflow_dispatch' && inputs.mode || 'daily' }}
           GENERATION_TARGET: ${{ github.event_name == 'workflow_dispatch' && inputs.target || '' }}
-          DAILY_TARGET: ${{ vars.DAILY_TARGET || '20' }}
-          INITIAL_TARGET_PER_RUN: ${{ vars.INITIAL_TARGET_PER_RUN || '150' }}
+          DAILY_TARGET: ${{ vars.DAILY_TARGET || '10' }}
+          SEED_TARGET_DEFAULT: ${{ vars.SEED_TARGET_DEFAULT || '15' }}
+          SEED_TARGET_MAX: ${{ vars.SEED_TARGET_MAX || '30' }}
+          COMPLETE_TARGET_QUESTIONS: ${{ vars.COMPLETE_TARGET_QUESTIONS || '550' }}
+          EXPANDED_TARGET_QUESTIONS: ${{ vars.EXPANDED_TARGET_QUESTIONS || '1000' }}
+          MIN_PER_CHAPTER_COMPLETE: ${{ vars.MIN_PER_CHAPTER_COMPLETE || '10' }}
+          INITIAL_TARGET_PER_RUN: ${{ vars.INITIAL_TARGET_PER_RUN || '15' }}
           MAX_RETRY: ${{ vars.MAX_RETRY || '3' }}
           MIN_EXPLANATION_LENGTH: ${{ vars.MIN_EXPLANATION_LENGTH || '120' }}
           MAX_RUNTIME_MINUTES: ${{ vars.MAX_RUNTIME_MINUTES || '25' }}
@@ -71,7 +90,9 @@ jobs:
             fi
           fi
           python tools/auto_refill_quality.py --mode "$GENERATION_MODE" --target "$GENERATION_TARGET" | tee refill-result.json
-          python tools/assert_refill_result.py refill-result.json
+          if [ "$GENERATION_MODE" != "validate_only" ]; then
+            python tools/assert_refill_result.py refill-result.json
+          fi
 
       - name: Validate generated content
         env:
@@ -80,7 +101,9 @@ jobs:
         run: |
           python tools/validate_question_bank.py
           python tools/review_generated_queue.py --summary
+          python tools/generate_coverage_report.py
           python tools/build_static_pwa_assets.py
+          READINESS_PROFILE="${{ github.event_name == 'workflow_dispatch' && inputs.readiness_profile || 'bootstrap' }}" python tools/release_readiness.py
 
       - name: Commit and push reviewed artifacts
         run: |
@@ -91,6 +114,7 @@ jobs:
           git add bank/meta.json || true
           git add bank/generated_review_queue.jsonl || true
           git add bank/question_provenance.jsonl || true
+          git add bank/coverage_report.json || true
           git add frontend/src/question-bank.json || true
           git add frontend/src/offline-app.js || true
           git add frontend/src/service-worker.js || true

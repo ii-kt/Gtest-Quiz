@@ -21,12 +21,16 @@ FRONTEND = ROOT / "frontend/src"
 STATIC_BANK_PATH = FRONTEND / "question-bank.json"
 SERVICE_WORKER_PATH = FRONTEND / "service-worker.js"
 META_PATH = ROOT / "bank/meta.json"
+COVERAGE_REPORT_PATH = ROOT / "bank/coverage_report.json"
 LEGAL_SOURCE_FIELDS = (
     "source_url",
     "source_title",
     "source_version",
     "source_checked_at",
     "legal_basis",
+    "source_quote_short",
+    "source_section",
+    "source_organization",
 )
 LEGAL_MARKERS = ("法律", "倫理", "ガバナンス", "個人情報", "著作権", "ガイドライン", "規制")
 
@@ -107,6 +111,16 @@ def write_static_bank() -> Dict[str, Any]:
     questions = load_questions()
     bank_version = load_bank_version()
     content_hash = hashlib.sha256(_canonical_content(questions, bank_version).encode("utf-8")).hexdigest()
+    coverage = {}
+    if COVERAGE_REPORT_PATH.exists():
+        report = json.loads(COVERAGE_REPORT_PATH.read_text(encoding="utf-8"))
+        coverage = {
+            "covered_chapters": report.get("covered_chapters", 0),
+            "expected_chapters": report.get("expected_chapters", 0),
+            "target_complete_questions": report.get("target_complete_questions", 550),
+            "target_expanded_questions": report.get("target_expanded_questions", 1000),
+            "profiles": report.get("profiles", {}),
+        }
     payload = {
         "schema_version": "gtest_quiz_static_bank_v1",
         "meta": {
@@ -114,6 +128,7 @@ def write_static_bank() -> Dict[str, Any]:
             "question_count": len(questions),
             "bank_version": bank_version,
             "content_hash": content_hash,
+            "coverage": coverage,
         },
         "questions": questions,
     }

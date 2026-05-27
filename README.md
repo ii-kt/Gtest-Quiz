@@ -1,5 +1,21 @@
 # Gtest-Quiz
 
+## Current bank status
+
+This section mirrors `bank/coverage_report.json`; run `python tools/generate_coverage_report.py` after changing the bank.
+
+- bank_version: `gemini35_v1`
+- model: `gemini-3.5-flash`
+- active questions: `31`
+- current readiness: `bootstrap`
+- alpha target: `100` questions
+- beta target: `275` questions and all 55 chapters covered
+- complete target: `550` questions, all 55 chapters with at least 10 questions
+- expanded target: `1000` questions
+- current complete progress: `31 / 550`
+
+Readiness profiles are `bootstrap`, `alpha`, `beta`, `complete`, and `expanded`. `complete` is the G検定 learning-app completion gate; it must not be weakened just to pass.
+
 G検定向けの完全オフライン静的PWAです。現行の推奨利用形態は `frontend/src/` をGitHub Pagesなどの静的ホスティングで配信し、iPhoneのSafariからホーム画面に追加して使う形です。日常利用ではPCサーバー、ログイン、APIキー、バックエンド起動は不要です。
 
 ## Current Product Path

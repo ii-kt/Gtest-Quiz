@@ -16,6 +16,7 @@ from backend.app.services import QuizService, UnauthorizedError
 from gtest_quiz.bank_epoch import current_bank_version, current_model_name
 from gtest_quiz.question_bank import get_all_questions
 from tools.benchmark_learning_policy import compare_policy_benchmarks
+from tools.generate_coverage_report import PROFILE_RULES, build_coverage_report, write_coverage_report
 from tools.validate_question_bank import validate_question_bank
 
 
@@ -25,8 +26,13 @@ def _check(name: str, passed: bool, detail: Dict[str, Any] | None = None) -> Dic
 
 def evaluate_release_readiness(profile: str | None = None) -> Dict[str, Any]:
     checks: List[Dict[str, Any]] = []
-    readiness_profile = (profile or os.getenv("READINESS_PROFILE", "production")).strip().lower()
-    production_min_questions = int(os.getenv("PRODUCTION_MIN_QUESTIONS", "100"))
+    readiness_profile = (profile or os.getenv("READINESS_PROFILE", "complete")).strip().lower()
+    if readiness_profile == "production":
+        readiness_profile = "complete"
+    if readiness_profile not in PROFILE_RULES:
+        raise ValueError(f"unknown readiness profile: {readiness_profile}")
+    coverage_report = write_coverage_report()
+    profile_status = coverage_report["profiles"][readiness_profile]
     bank_errors = validate_question_bank()
     questions = get_all_questions()
     chapters = {q.chapter_id for q in questions}
@@ -54,21 +60,40 @@ def evaluate_release_readiness(profile: str | None = None) -> Dict[str, Any]:
     checks.append(
         _check(
             "readiness_profile_question_count",
-            (bootstrap_profile and question_count < production_min_questions)
-            or (not bootstrap_profile and question_count >= production_min_questions),
+            profile_status["passed"] or question_count >= profile_status["min_questions"],
             {
                 "profile": readiness_profile,
                 "questions": question_count,
-                "production_min_questions": production_min_questions,
+                "min_questions": profile_status["min_questions"],
             },
         )
     )
     checks.append(
         _check(
             "syllabus_coverage",
-            (bootstrap_profile and question_count < production_min_questions and static_bank.get("meta", {}).get("bank_version") == bank_version)
-            or (question_count >= 100 and len(chapters) >= 20),
+            coverage_report["covered_chapters"] >= profile_status["min_chapters"]
+            and (
+                profile_status["min_per_chapter"] == 0
+                or profile_status["chapters_meeting_floor"] == coverage_report["expected_chapters"]
+            ),
             {"questions": question_count, "chapters": len(chapters), "bank_version": bank_version, "profile": readiness_profile},
+        )
+    )
+    checks.append(
+        _check(
+            "coverage_report_quality",
+            coverage_report["profiles"][readiness_profile]["passed"],
+            {
+                "profile": readiness_profile,
+                "total_questions": coverage_report["total_questions"],
+                "covered_chapters": coverage_report["covered_chapters"],
+                "missing_chapters": coverage_report["missing_chapters"][:10],
+                "active_review_warning_count": coverage_report["active_review_warning_count"],
+                "legal_source_missing": coverage_report["legal_source_missing"],
+                "duplicate_suspect_count": coverage_report["duplicate_suspect_count"],
+                "correct_index_window_issues": coverage_report["correct_index_window_issues"][:3],
+                "difficulty_balance_failures": profile_status["difficulty_balance_failures"][:10],
+            },
         )
     )
     checks.append(
@@ -95,7 +120,8 @@ def evaluate_release_readiness(profile: str | None = None) -> Dict[str, Any]:
             "question_bank_cache_network_first",
             "QUESTION_BANK_URL" in service_worker
             and "url.pathname.endsWith('/question-bank.json')" in service_worker
-            and "networkFirst(request)" in service_worker,
+            and "questionBankNetworkFirst(request)" in service_worker
+            and "cache: 'no-store'" in service_worker,
         )
     )
     checks.append(
@@ -186,7 +212,7 @@ def evaluate_release_readiness(profile: str | None = None) -> Dict[str, Any]:
         _check(
             "precision_benchmark",
             bool(adaptive.get("bootstrap_empty_bank"))
-            or (bootstrap_profile and question_count < production_min_questions)
+            or bootstrap_profile
             or (bootstrap_profile and bool(adaptive.get("limited_by_bank_size")))
             or (adaptive["scheduled_items"] >= 90 and adaptive["covered_chapters"] >= 20),
             {"adaptive": adaptive, "deltas": benchmark["deltas"]},

@@ -29,7 +29,18 @@ REVIEW_QUEUE_PATH = Path("bank/generated_review_queue.jsonl")
 PROVENANCE_PATH = Path("bank/question_provenance.jsonl")
 LEGAL_CHAPTER_GROUPS = {"AIに関する法律と契約", "AI倫理・AIガバナンス"}
 LEGAL_TERMS = ("法律", "契約", "個人情報", "著作権", "知的財産", "ガイドライン", "倫理", "ガバナンス")
-LEGAL_SOURCE_FIELDS = ("source_url", "source_title", "source_version", "source_checked_at", "legal_basis")
+LEGAL_SOURCE_FIELDS = (
+    "source_url",
+    "source_title",
+    "source_version",
+    "source_checked_at",
+    "legal_basis",
+)
+LEGAL_EXTENDED_SOURCE_FIELDS = (
+    "source_quote_short",
+    "source_section",
+    "source_organization",
+)
 
 
 class GeneratedQuestionSpec(BaseModel):
@@ -46,6 +57,9 @@ class GeneratedQuestionSpec(BaseModel):
     source_version: str = ""
     source_checked_at: str = ""
     legal_basis: str = ""
+    source_quote_short: str = ""
+    source_section: str = ""
+    source_organization: str = ""
 
 
 class QuestionGenerator(Protocol):
@@ -98,6 +112,7 @@ class CoverageTarget:
     priority: float
     rotation_score: int = 0
     concepts: tuple[str, ...] = ()
+    desired_difficulty: str = "standard"
 
 
 @dataclass(frozen=True)
@@ -131,7 +146,7 @@ def is_legal_target(chapter_group: str, chapter_id: str = "", domain: str = "") 
 
 def build_generation_prompt(target: CoverageTarget, prompt_version: str = PROMPT_VERSION) -> str:
     concept_hint = ", ".join(target.concepts) if target.concepts else "chapter core concepts"
-    return f"""
+    prompt = f"""
 あなたはJDLA G検定の専門作問者です。
 prompt_version: {prompt_version}
 
@@ -155,6 +170,14 @@ prompt_version: {prompt_version}
 現在の問題数: {target.current_count}
 目標問題数: {target.target_count}
 """.strip()
+    return prompt + (
+        f"\nTarget difficulty: {target.desired_difficulty}"
+        f"\nAdditional strict requirements:"
+        f"\n- difficulty must be exactly \"{target.desired_difficulty}\"."
+        "\n- For legal/guideline questions, use official sources and fill source_url, source_title, "
+        "source_version, source_checked_at, legal_basis, source_quote_short, source_section, and source_organization. "
+        "Keep source_quote_short brief."
+    )
 
 
 def load_existing_items(path: Path = QUESTION_BANK_PATH) -> List[Dict[str, Any]]:
@@ -181,6 +204,26 @@ def _daily_rotation_score(chapter_id: str) -> int:
     return int(digest[:8], 16)
 
 
+def desired_difficulty_counts(target_count: int) -> Dict[str, int]:
+    if target_count >= 15:
+        basic = max(3, round(target_count * 0.25))
+        advanced = max(3, round(target_count * 0.25))
+    else:
+        basic = max(2, round(target_count * 0.25))
+        advanced = max(2, round(target_count * 0.25))
+    standard = max(1, target_count - basic - advanced)
+    return {"basic": basic, "standard": standard, "advanced": advanced}
+
+
+def desired_difficulty_for_chapter(difficulty_counts: Dict[str, int], target_count: int) -> str:
+    desired = desired_difficulty_counts(target_count)
+    deficits = {
+        difficulty: desired[difficulty] - int(difficulty_counts.get(difficulty, 0))
+        for difficulty in ("basic", "standard", "advanced")
+    }
+    return max(("basic", "standard", "advanced"), key=lambda difficulty: (deficits[difficulty], desired[difficulty], difficulty))
+
+
 def build_coverage_targets(
     meta: MetaManager,
     existing_items: Iterable[Dict[str, Any]],
@@ -189,12 +232,17 @@ def build_coverage_targets(
 ) -> List[CoverageTarget]:
     counts: Dict[str, int] = {}
     groups: Dict[str, str] = {}
+    difficulty_counts: Dict[str, Dict[str, int]] = {}
     for item in existing_items:
         chapter_id = str(item.get("chapter_id", ""))
         if not chapter_id:
             continue
         counts[chapter_id] = counts.get(chapter_id, 0) + 1
         groups.setdefault(chapter_id, str(item.get("chapter_group", "")))
+        difficulty = str(item.get("difficulty", "standard"))
+        difficulty_counts.setdefault(chapter_id, {"basic": 0, "standard": 0, "advanced": 0})
+        if difficulty in difficulty_counts[chapter_id]:
+            difficulty_counts[chapter_id][difficulty] += 1
 
     targets: List[CoverageTarget] = []
     chapters = meta.meta.get("chapters", {})
@@ -227,6 +275,7 @@ def build_coverage_targets(
                     target_count=target_count,
                     priority=priority,
                     rotation_score=rotation_score,
+                    desired_difficulty=desired_difficulty_for_chapter(difficulty_counts.get(chapter_id, {}), target_count),
                 )
             )
 
@@ -240,6 +289,7 @@ def build_coverage_targets(
                     target_count=max(per_chapter_floor, current),
                     priority=0.0,
                     rotation_score=_daily_rotation_score(chapter_id),
+                    desired_difficulty=desired_difficulty_for_chapter(difficulty_counts.get(chapter_id, {}), max(per_chapter_floor, current)),
                 )
             )
 
@@ -312,6 +362,9 @@ def review_generated_candidate(
     if len(str(data.get("question", ""))) < 18:
         score -= 20
         reasons.append("question is too short for concept checking")
+    if target and str(data.get("difficulty", "")).strip() != target.desired_difficulty:
+        score -= 20
+        reasons.append(f"difficulty does not match target: {target.desired_difficulty}")
     if legal_scope:
         missing_source = [field for field in LEGAL_SOURCE_FIELDS if not str(data.get(field, "")).strip()]
         if missing_source:
@@ -379,13 +432,14 @@ def to_question_record(
             "review_reasons": decision.review_reasons,
             "accepted_with_review_warnings": False,
             "choice_shuffle_seed": shuffle_seed,
+            "desired_difficulty": target.desired_difficulty,
             "syllabus_node": str(data.get("syllabus_node", target.chapter_id)),
             "concepts": list(data.get("concepts", [])),
             "generated_at": _now_iso(),
         },
     }
     if is_legal_target(record["chapter_group"], record["chapter_id"], record["domain"]):
-        for field in LEGAL_SOURCE_FIELDS:
+        for field in (*LEGAL_SOURCE_FIELDS, *LEGAL_EXTENDED_SOURCE_FIELDS):
             record[field] = str(data.get(field, "")).strip()
     return record
 
@@ -416,9 +470,13 @@ class ContentFactory:
         stats = FactoryStats(targets=len(targets))
         accepted_records: List[Dict[str, Any]] = []
         deadline = time.monotonic() + (self.config.max_runtime_minutes * 60)
+        attempt_budget = max(
+            self.config.target_accepts * self.config.max_attempts_per_target * 4,
+            len(targets) * self.config.max_attempts_per_target,
+        )
 
         target_index = 0
-        while targets and stats.accepted < self.config.target_accepts and time.monotonic() < deadline:
+        while targets and attempt_budget > 0 and stats.accepted < self.config.target_accepts and time.monotonic() < deadline:
             target = targets[target_index % len(targets)]
             target_index += 1
             if time.monotonic() >= deadline:
@@ -426,7 +484,10 @@ class ContentFactory:
             if stats.accepted >= self.config.target_accepts:
                 break
             for _attempt in range(self.config.max_attempts_per_target):
+                attempt_budget -= 1
                 if time.monotonic() >= deadline:
+                    break
+                if attempt_budget < 0:
                     break
                 if stats.accepted >= self.config.target_accepts:
                     break

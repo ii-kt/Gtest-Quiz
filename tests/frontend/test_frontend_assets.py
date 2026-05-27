@@ -26,6 +26,9 @@ def test_frontend_page_exists():
     assert "dueNow" in text
     assert "trackedItems" in text
     assert 'id="sourcePanel"' in text
+    assert 'id="bankStatus"' in text
+    assert 'id="chapterProgressList"' in text
+    assert 'id="unlearnedChapters"' in text
     assert "placeholder" not in text
     assert "ユーザー名" not in text
     assert "パスワード" not in text
@@ -53,6 +56,8 @@ def test_frontend_is_static_offline_first():
     assert "applyBankVersionMigration" in script
     assert "bankResetNoticeSeen" in script
     assert "renderSourcePanel" in script
+    assert "renderBankStatus" in script
+    assert "buildChapterProgress" in script
     assert "fetch(STATIC_BANK_URL, { cache: 'no-store' })" in script
     assert "learnerId" not in script
     assert "ensureLearner" not in script
@@ -66,6 +71,7 @@ def test_static_question_bank_asset_matches_source_bank():
     assert len(bank["questions"]) == source_count
     assert bank["meta"]["bank_version"] == "gemini35_v1"
     assert bank["meta"]["content_hash"]
+    assert "coverage" in bank["meta"]
     assert "generated_at" not in bank["meta"]
     assert "git_commit" not in bank["meta"]
     if bank["questions"]:

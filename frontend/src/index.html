@@ -508,6 +508,35 @@
         gap: 8px;
       }
 
+      .status-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+      }
+
+      .status-chip {
+        min-width: 0;
+        padding: 10px;
+        border: 1px solid var(--line);
+        border-radius: var(--radius-sm);
+        background: rgba(255, 255, 255, .68);
+      }
+
+      .status-chip span {
+        display: block;
+        color: var(--muted);
+        font-size: .72rem;
+        font-weight: 800;
+      }
+
+      .status-chip strong {
+        display: block;
+        margin-top: 4px;
+        color: var(--ink);
+        font-size: .92rem;
+        overflow-wrap: anywhere;
+      }
+
       .row-label {
         display: flex;
         justify-content: space-between;
@@ -850,8 +879,23 @@
         </section>
 
         <section class="insight-panel">
+          <div class="section-head"><strong>Bank Status</strong></div>
+          <div id="bankStatus" class="panel-body"><div class="empty">データ待機中</div></div>
+        </section>
+
+        <section class="insight-panel">
           <div class="section-head"><strong>Weak Map</strong></div>
           <div id="masteryList" class="panel-body"><div class="empty">データ待機中</div></div>
+        </section>
+
+        <section class="insight-panel">
+          <div class="section-head"><strong>Chapter Progress</strong></div>
+          <div id="chapterProgressList" class="panel-body"><div class="empty">データ待機中</div></div>
+        </section>
+
+        <section class="insight-panel">
+          <div class="section-head"><strong>Unlearned Chapters</strong></div>
+          <div id="unlearnedChapters" class="panel-body"><div class="empty">データ待機中</div></div>
         </section>
 
         <section class="insight-panel">

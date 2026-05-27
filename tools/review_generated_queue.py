@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List
 
@@ -24,6 +25,8 @@ from gtest_quiz.content_factory import (
 )
 from gtest_quiz.question_quality import validate_generated_question
 
+REVIEW_ARCHIVE_DIR = Path("bank/review_archive")
+
 
 def load_queue(path: Path = REVIEW_QUEUE_PATH) -> List[Dict[str, Any]]:
     if not path.exists():
@@ -38,10 +41,43 @@ def load_queue(path: Path = REVIEW_QUEUE_PATH) -> List[Dict[str, Any]]:
 def summarize_queue(path: Path = REVIEW_QUEUE_PATH) -> Dict[str, Any]:
     items = load_queue(path)
     by_decision: Dict[str, int] = {}
+    reject_reasons: Dict[str, int] = {}
     for item in items:
         decision = str(item.get("decision", "unknown"))
         by_decision[decision] = by_decision.get(decision, 0) + 1
-    return {"total": len(items), "by_decision": dict(sorted(by_decision.items()))}
+        if decision == "reject":
+            for reason in item.get("reasons", []) or []:
+                reason = str(reason)
+                reject_reasons[reason] = reject_reasons.get(reason, 0) + 1
+    return {
+        "total": len(items),
+        "by_decision": dict(sorted(by_decision.items())),
+        "review_queue_total": len(items),
+        "review_queue_by_decision": dict(sorted(by_decision.items())),
+        "reject_reason_top": [
+            {"reason": reason, "count": count}
+            for reason, count in sorted(reject_reasons.items(), key=lambda pair: (-pair[1], pair[0]))[:8]
+        ],
+    }
+
+
+def archive_rejects(*, queue_path: Path = REVIEW_QUEUE_PATH, archive_dir: Path = REVIEW_ARCHIVE_DIR, keep_recent: int = 100) -> Dict[str, Any]:
+    items = load_queue(queue_path)
+    reject_items = [item for item in items if str(item.get("decision", "")) == "reject"]
+    if len(reject_items) <= keep_recent:
+        return {"archived": 0, "remaining": len(items)}
+    archive_dir.mkdir(parents=True, exist_ok=True)
+    cutoff = len(reject_items) - keep_recent
+    reject_to_archive = reject_items[:cutoff]
+    archive_path = archive_dir / f"rejects-{datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%SZ')}.jsonl"
+    archive_path.write_text(
+        "".join(json.dumps(item, ensure_ascii=False) + "\n" for item in reject_to_archive),
+        encoding="utf-8",
+    )
+    archived_ids = {id(item) for item in reject_to_archive}
+    remaining = [item for item in items if id(item) not in archived_ids]
+    queue_path.write_text("".join(json.dumps(item, ensure_ascii=False) + "\n" for item in remaining), encoding="utf-8")
+    return {"archived": len(reject_to_archive), "remaining": len(remaining), "archive_path": str(archive_path)}
 
 
 def promote(index: int, *, queue_path: Path = REVIEW_QUEUE_PATH, bank_path: Path = QUESTION_BANK_PATH) -> Dict[str, Any]:
@@ -111,9 +147,13 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Inspect or promote generated question review queue")
     parser.add_argument("--summary", action="store_true")
     parser.add_argument("--promote", type=int)
+    parser.add_argument("--archive-rejects", action="store_true")
+    parser.add_argument("--keep-recent", type=int, default=100)
     args = parser.parse_args()
     if args.promote is not None:
         print(json.dumps(promote(args.promote), ensure_ascii=False, indent=2))
+    elif args.archive_rejects:
+        print(json.dumps(archive_rejects(keep_recent=args.keep_recent), ensure_ascii=False, indent=2))
     else:
         print(json.dumps(summarize_queue(), ensure_ascii=False, indent=2))
 

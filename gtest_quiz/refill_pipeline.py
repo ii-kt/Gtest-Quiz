@@ -44,6 +44,7 @@ class RefillConfig:
         bank_version: str = DEFAULT_QUESTION_BANK_EPOCH,
         max_runtime_minutes: int = 25,
         reset_question_bank: bool = False,
+        per_chapter_floor: int = 10,
     ) -> None:
         self.model_name = model_name
         self.target_daily = target_daily
@@ -55,6 +56,7 @@ class RefillConfig:
         self.bank_version = bank_version
         self.max_runtime_minutes = max_runtime_minutes
         self.reset_question_bank = reset_question_bank
+        self.per_chapter_floor = per_chapter_floor
 
 
 class RefillStats:
@@ -387,7 +389,7 @@ def run_refill(config: RefillConfig, meta_path: str = "bank/meta.json") -> Refil
         max_retry=config.max_retry,
         sleep_seconds=config.sleep_seconds_on_429,
     )
-    allow_growth = config.mode in {"daily", "replace"}
+    allow_growth = config.mode in {"daily", "replace", "build_to_complete", "build_to_expanded"}
     question_bank_path = QUESTION_BANK_PATH
     review_queue_path = REVIEW_QUEUE_PATH
     provenance_path = PROVENANCE_PATH
@@ -413,6 +415,7 @@ def run_refill(config: RefillConfig, meta_path: str = "bank/meta.json") -> Refil
             bank_version=config.bank_version,
             mode=config.mode,
             max_runtime_minutes=config.max_runtime_minutes,
+            per_chapter_floor=config.per_chapter_floor,
             update_meta=update_meta,
             explicit_targets=explicit_targets,
             question_bank_path=question_bank_path,

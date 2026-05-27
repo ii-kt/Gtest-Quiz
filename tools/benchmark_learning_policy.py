@@ -34,6 +34,8 @@ def run_policy_benchmark(seed: int = 7, rounds: int = 160, policy_variant: str =
     summary: Dict[str, Dict[str, Any]] = {}
     schedules: Dict[str, Dict[str, Any]] = {}
     covered_chapters = set()
+    weak_chapter_revisits = 0
+    due_review_hits = 0
     correct_count = 0
     simulation_rounds = min(rounds, max(len(bank) * 6, len(bank)))
 
@@ -49,6 +51,11 @@ def run_policy_benchmark(seed: int = 7, rounds: int = 160, policy_variant: str =
         if selection is None:
             break
         q = selection.question
+        reason = selection.learning.reason if hasattr(selection.learning, "reason") else selection.learning.get("reason", "")
+        if reason == "weak_chapter":
+            weak_chapter_revisits += 1
+        if reason == "review_due":
+            due_review_hits += 1
         covered_chapters.add(q.chapter_id)
 
         latent = 0.62 if q.difficulty == "basic" else 0.54 if q.difficulty == "standard" else 0.45
@@ -80,13 +87,23 @@ def run_policy_benchmark(seed: int = 7, rounds: int = 160, policy_variant: str =
         )
 
     due_reviews = sum(1 for item in schedules.values() if item.get("repetitions", 0) > 0)
+    unique_questions = len(summary)
+    repeat_rate = 1 - (unique_questions / len(history)) if history else 0.0
+    expected_chapters = len({question.chapter_id for question in bank}) or 1
+    coverage_ratio = len(covered_chapters) / expected_chapters
+    unique_ratio = unique_questions / max(1, min(len(bank), len(history)))
+    policy_balance_score = max(0.0, min(1.0, (coverage_ratio * 0.45) + (unique_ratio * 0.35) + ((1 - repeat_rate) * 0.20)))
     return {
         "rounds": len(history),
         "accuracy": round(correct_count / len(history), 4) if history else 0.0,
-        "unique_questions": len(summary),
+        "unique_questions": unique_questions,
         "covered_chapters": len(covered_chapters),
         "scheduled_items": len(schedules),
         "review_ready_items": due_reviews,
+        "repeat_rate": round(repeat_rate, 4),
+        "weak_chapter_revisit_rate": round(weak_chapter_revisits / len(history), 4) if history else 0.0,
+        "due_review_hit_rate": round(due_review_hits / len(history), 4) if history else 0.0,
+        "policy_balance_score": round(policy_balance_score, 4),
         "policy": policy_variant,
         "limited_by_bank_size": simulation_rounds < rounds,
     }
@@ -108,6 +125,7 @@ def compare_policy_benchmarks(seed: int = 7, rounds: int = 160) -> Dict[str, Any
             "adaptive_vs_random_coverage": adaptive["covered_chapters"] - random_baseline["covered_chapters"],
             "adaptive_vs_random_scheduled": adaptive["scheduled_items"] - random_baseline["scheduled_items"],
             "adaptive_vs_chapter_accuracy": round(adaptive["accuracy"] - chapter_baseline["accuracy"], 4),
+            "adaptive_vs_random_balance": round(adaptive.get("policy_balance_score", 0) - random_baseline.get("policy_balance_score", 0), 4),
         },
         "recommended_policy": ADAPTIVE_POLICY,
     }
