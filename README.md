@@ -65,7 +65,9 @@ python tools/build_static_pwa_assets.py
 
 `tools/build_static_pwa_assets.py` は `frontend/src/question-bank.json` に `content_hash` を書き込み、同じ問題データならtimestampだけの差分を作りません。Service Workerの `CACHE_NAME` もbank versionとcontent hashに合わせて更新します。
 
-GitHub Actionsの本線は `Auto Refill Question Bank (Quality Pipeline)` です。JST 09:17相当の `17 0 * * *` で毎日1回、`DAILY_TARGET=20` を初期値としてGemini 3.5 Flash世代の問題を追加生成します。daily targetは前回のaccepted/rate limit/API call結果を見て自動調整します。手動実行では `reset_and_seed`、`seed`、`daily`、`replace` を選べます。legacyの `auto_refill.yml` は無効化済みで、二重起動しません。
+GitHub Actionsの本線は `Auto Refill Question Bank (Quality Pipeline)` です。JST 09:00相当の `0 0 * * *` で毎日1回、`DAILY_TARGET=10` を初期値としてGemini 3.5 Flash世代の問題を追加生成します。daily targetは前回のaccepted/rate limit/API call結果を見て自動調整します。手動実行では `reset_and_seed`、`seed`、`daily`、`replace`、`build_to_complete`、`build_to_expanded` を選べます。legacyの `auto_refill.yml` は無効化済みで、二重起動しません。
+
+手動 `seed` / `build_to_complete` で `accepted=0` になりassertが失敗したrunは、`bank/meta.json` の `last_refill_result` がmainへcommitされない場合があります。その場合の次回target調整はGitHub Actionsログを見て判断します。一方、日次 `daily` でrate limit/quota signal付きの `accepted=0` になった場合はassertを通過でき、`bank/meta.json` がcommitされれば次回の日次target自動調整に利用されます。
 
 ```bash
 python tools/auto_refill_quality.py
