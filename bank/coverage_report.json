@@ -1,40 +1,30 @@
 {
   "schema_version": "gtest_quiz_coverage_report_v1",
-  "generated_at": "2026-05-28T04:24:11Z",
+  "generated_at": "2026-05-29T04:29:25Z",
   "bank_version": "gemini35_v1",
   "model": "gemini-3.5-flash",
-  "total_questions": 37,
+  "total_questions": 47,
   "target_complete_questions": 550,
   "target_expanded_questions": 1000,
   "expected_chapters": 55,
-  "covered_chapters": 36,
+  "covered_chapters": 46,
   "missing_chapters": [
     "2. 人工知能分野で議論される問題",
     "4. 知識表現とエキスパートシステム",
-    "9. 強化学習",
     "11. ニューラルネットワークとディープラーニング",
-    "15. 誤差逆伝播法",
-    "17. 全結合層",
-    "19. 正規化層",
-    "23. Attention",
-    "27. 自然言語処理",
-    "28. 音声処理",
     "31. 転移学習・ファインチューニング",
-    "33. モデルの解釈性",
     "36. データの収集・加工・分析・学習",
     "2. 著作権法",
     "4. 不正競争防止法",
-    "10. 公平性",
     "11. 安全性とセキュリティ",
-    "15. 環境保護",
-    "17. その他の重要な価値"
+    "15. 環境保護"
   ],
   "extra_chapters": [],
   "correct_index_distribution": {
-    "0": 7,
-    "1": 8,
-    "2": 12,
-    "3": 10
+    "0": 8,
+    "1": 12,
+    "2": 14,
+    "3": 13
   },
   "correct_index_window_issues": [],
   "active_review_warning_count": 0,
@@ -190,16 +180,16 @@
     {
       "chapter_group": "機械学習の概要",
       "chapter_id": "9. 強化学習",
-      "question_count": 0,
+      "question_count": 1,
       "difficulty_distribution": {
         "basic": 0,
-        "standard": 0,
+        "standard": 1,
         "advanced": 0
       },
       "correct_index_distribution": {
         "0": 0,
         "1": 0,
-        "2": 0,
+        "2": 1,
         "3": 0
       },
       "legal_source_missing": 0,
@@ -298,17 +288,17 @@
     {
       "chapter_group": "ディープラーニングの概要",
       "chapter_id": "15. 誤差逆伝播法",
-      "question_count": 0,
+      "question_count": 1,
       "difficulty_distribution": {
         "basic": 0,
-        "standard": 0,
+        "standard": 1,
         "advanced": 0
       },
       "correct_index_distribution": {
         "0": 0,
         "1": 0,
         "2": 0,
-        "3": 0
+        "3": 1
       },
       "legal_source_missing": 0,
       "review_warning_count": 0
@@ -334,17 +324,17 @@
     {
       "chapter_group": "ディープラーニングの要素技術",
       "chapter_id": "17. 全結合層",
-      "question_count": 0,
+      "question_count": 1,
       "difficulty_distribution": {
         "basic": 0,
-        "standard": 0,
+        "standard": 1,
         "advanced": 0
       },
       "correct_index_distribution": {
         "0": 0,
         "1": 0,
         "2": 0,
-        "3": 0
+        "3": 1
       },
       "legal_source_missing": 0,
       "review_warning_count": 0
@@ -370,14 +360,14 @@
     {
       "chapter_group": "ディープラーニングの要素技術",
       "chapter_id": "19. 正規化層",
-      "question_count": 0,
+      "question_count": 1,
       "difficulty_distribution": {
         "basic": 0,
-        "standard": 0,
+        "standard": 1,
         "advanced": 0
       },
       "correct_index_distribution": {
-        "0": 0,
+        "0": 1,
         "1": 0,
         "2": 0,
         "3": 0
@@ -442,15 +432,15 @@
     {
       "chapter_group": "ディープラーニングの要素技術",
       "chapter_id": "23. Attention",
-      "question_count": 0,
+      "question_count": 1,
       "difficulty_distribution": {
         "basic": 0,
-        "standard": 0,
+        "standard": 1,
         "advanced": 0
       },
       "correct_index_distribution": {
         "0": 0,
-        "1": 0,
+        "1": 1,
         "2": 0,
         "3": 0
       },
@@ -514,15 +504,15 @@
     {
       "chapter_group": "ディープラーニングの応用例",
       "chapter_id": "27. 自然言語処理",
-      "question_count": 0,
+      "question_count": 1,
       "difficulty_distribution": {
         "basic": 0,
-        "standard": 0,
+        "standard": 1,
         "advanced": 0
       },
       "correct_index_distribution": {
         "0": 0,
-        "1": 0,
+        "1": 1,
         "2": 0,
         "3": 0
       },
@@ -532,16 +522,16 @@
     {
       "chapter_group": "ディープラーニングの応用例",
       "chapter_id": "28. 音声処理",
-      "question_count": 0,
+      "question_count": 1,
       "difficulty_distribution": {
         "basic": 0,
-        "standard": 0,
+        "standard": 1,
         "advanced": 0
       },
       "correct_index_distribution": {
         "0": 0,
         "1": 0,
-        "2": 0,
+        "2": 1,
         "3": 0
       },
       "legal_source_missing": 0,
@@ -622,15 +612,15 @@
     {
       "chapter_group": "ディープラーニングの応用例",
       "chapter_id": "33. モデルの解釈性",
-      "question_count": 0,
+      "question_count": 1,
       "difficulty_distribution": {
         "basic": 0,
-        "standard": 0,
+        "standard": 1,
         "advanced": 0
       },
       "correct_index_distribution": {
         "0": 0,
-        "1": 0,
+        "1": 1,
         "2": 0,
         "3": 0
       },
@@ -874,15 +864,15 @@
     {
       "chapter_group": "AI倫理・AIガバナンス",
       "chapter_id": "10. 公平性",
-      "question_count": 0,
+      "question_count": 1,
       "difficulty_distribution": {
         "basic": 0,
-        "standard": 0,
+        "standard": 1,
         "advanced": 0
       },
       "correct_index_distribution": {
         "0": 0,
-        "1": 0,
+        "1": 1,
         "2": 0,
         "3": 0
       },
@@ -1000,17 +990,17 @@
     {
       "chapter_group": "AI倫理・AIガバナンス",
       "chapter_id": "17. その他の重要な価値",
-      "question_count": 0,
+      "question_count": 1,
       "difficulty_distribution": {
         "basic": 0,
-        "standard": 0,
+        "standard": 1,
         "advanced": 0
       },
       "correct_index_distribution": {
         "0": 0,
         "1": 0,
         "2": 0,
-        "3": 0
+        "3": 1
       },
       "legal_source_missing": 0,
       "review_warning_count": 0
@@ -1076,33 +1066,38 @@
       "difficulty_balance_failures": []
     }
   },
-  "review_queue_total": 16,
+  "review_queue_total": 23,
   "review_queue_by_decision": {
-    "reject": 16
+    "error": 1,
+    "reject": 22
   },
   "reject_reason_top": [
     {
       "reason": "explanation should distinguish incorrect choices",
-      "count": 14
+      "count": 20
     },
     {
       "reason": "explanation does not distinguish distractors",
-      "count": 12
+      "count": 17
     },
     {
       "reason": "explanation should include the reason for the correct answer",
-      "count": 9
+      "count": 12
     },
     {
       "reason": "legal or guideline question is missing official source metadata: source_url, source_title, source_version, source_checked_at, legal_basis",
       "count": 3
     },
     {
+      "reason": "explanation does not clearly state why the answer is correct",
+      "count": 2
+    },
+    {
       "reason": "concept tags are missing",
       "count": 2
     },
     {
-      "reason": "explanation does not clearly state why the answer is correct",
+      "reason": "503 UNAVAILABLE. {'error': {'code': 503, 'message': 'This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.', 'status': 'UNAVAILABLE'}}",
       "count": 1
     }
   ]
