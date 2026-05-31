@@ -1,22 +1,20 @@
 {
   "schema_version": "gtest_quiz_coverage_report_v1",
-  "generated_at": "2026-05-30T04:13:08Z",
+  "generated_at": "2026-05-31T04:46:47Z",
   "bank_version": "gemini35_v1",
   "model": "gemini-3.5-flash",
-  "total_questions": 57,
+  "total_questions": 62,
   "target_complete_questions": 550,
   "target_expanded_questions": 1000,
   "expected_chapters": 55,
-  "covered_chapters": 54,
-  "missing_chapters": [
-    "31. 転移学習・ファインチューニング"
-  ],
+  "covered_chapters": 55,
+  "missing_chapters": [],
   "extra_chapters": [],
   "correct_index_distribution": {
-    "0": 10,
-    "1": 16,
-    "2": 16,
-    "3": 15
+    "0": 11,
+    "1": 17,
+    "2": 17,
+    "3": 17
   },
   "correct_index_window_issues": [],
   "active_review_warning_count": 0,
@@ -190,17 +188,17 @@
     {
       "chapter_group": "機械学習の概要",
       "chapter_id": "10. モデルの選択・評価",
-      "question_count": 1,
+      "question_count": 2,
       "difficulty_distribution": {
         "basic": 0,
-        "standard": 1,
+        "standard": 2,
         "advanced": 0
       },
       "correct_index_distribution": {
         "0": 0,
         "1": 1,
         "2": 0,
-        "3": 0
+        "3": 1
       },
       "legal_source_missing": 0,
       "review_warning_count": 0
@@ -352,15 +350,15 @@
     {
       "chapter_group": "ディープラーニングの要素技術",
       "chapter_id": "19. 正規化層",
-      "question_count": 1,
+      "question_count": 2,
       "difficulty_distribution": {
         "basic": 0,
-        "standard": 1,
+        "standard": 2,
         "advanced": 0
       },
       "correct_index_distribution": {
         "0": 1,
-        "1": 0,
+        "1": 1,
         "2": 0,
         "3": 0
       },
@@ -568,14 +566,14 @@
     {
       "chapter_group": "ディープラーニングの応用例",
       "chapter_id": "31. 転移学習・ファインチューニング",
-      "question_count": 0,
+      "question_count": 1,
       "difficulty_distribution": {
         "basic": 0,
-        "standard": 0,
+        "standard": 1,
         "advanced": 0
       },
       "correct_index_distribution": {
-        "0": 0,
+        "0": 1,
         "1": 0,
         "2": 0,
         "3": 0
@@ -586,16 +584,16 @@
     {
       "chapter_group": "ディープラーニングの応用例",
       "chapter_id": "32. マルチモーダル",
-      "question_count": 1,
+      "question_count": 2,
       "difficulty_distribution": {
         "basic": 0,
-        "standard": 1,
+        "standard": 2,
         "advanced": 0
       },
       "correct_index_distribution": {
         "0": 0,
         "1": 0,
-        "2": 1,
+        "2": 2,
         "3": 0
       },
       "legal_source_missing": 0,
@@ -820,17 +818,17 @@
     {
       "chapter_group": "AI倫理・AIガバナンス",
       "chapter_id": "8. 国内外のガイドライン",
-      "question_count": 1,
+      "question_count": 2,
       "difficulty_distribution": {
         "basic": 0,
-        "standard": 1,
+        "standard": 2,
         "advanced": 0
       },
       "correct_index_distribution": {
         "0": 0,
         "1": 0,
         "2": 1,
-        "3": 0
+        "3": 1
       },
       "legal_source_missing": 0,
       "review_warning_count": 0
@@ -1058,23 +1056,23 @@
       "difficulty_balance_failures": []
     }
   },
-  "review_queue_total": 28,
+  "review_queue_total": 31,
   "review_queue_by_decision": {
     "error": 1,
-    "reject": 27
+    "reject": 30
   },
   "reject_reason_top": [
     {
       "reason": "explanation should distinguish incorrect choices",
-      "count": 24
+      "count": 27
     },
     {
       "reason": "explanation does not distinguish distractors",
-      "count": 21
+      "count": 24
     },
     {
       "reason": "explanation should include the reason for the correct answer",
-      "count": 15
+      "count": 16
     },
     {
       "reason": "legal or guideline question is missing official source metadata: source_url, source_title, source_version, source_checked_at, legal_basis",
