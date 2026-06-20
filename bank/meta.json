@@ -1,7 +1,7 @@
 {
   "version": 1,
   "created_at": "1970-01-01T00:00:00Z",
-  "updated_at": "2026-06-19T05:35:37Z",
+  "updated_at": "2026-06-20T04:26:51Z",
   "usage": {
     "total_questions": 0,
     "online_questions": 0,
@@ -14,7 +14,7 @@
     "last_error": null
   },
   "chapter_stats": {},
-  "last_chapter_id": "33. モデルの解釈性",
+  "last_chapter_id": "8. 教師なし学習",
   "chapters": {
     "01_人工知能とは": {
       "label": "人工知能とは",
@@ -301,30 +301,30 @@
   "question_bank": {
     "path": "bank/question_bank.jsonl",
     "bank_version": "gemini35_v1",
-    "total_questions": 184,
-    "updated_at": "2026-06-19T05:35:37Z"
+    "total_questions": 189,
+    "updated_at": "2026-06-20T04:26:50Z"
   },
   "content_factory": {
-    "last_refill_at": "2026-06-19T05:35:37Z",
+    "last_refill_at": "2026-06-20T04:26:50Z",
     "model": "gemini-3.5-flash",
     "bank_version": "gemini35_v1",
     "mode": "daily",
     "prompt_version": "gtest_factory_gemini35_v1_2026-05-26",
-    "target_accepts": 7,
-    "generated": 2,
-    "accepted": 2,
+    "target_accepts": 5,
+    "generated": 7,
+    "accepted": 5,
     "queued_for_review": 0,
-    "rejected": 0,
+    "rejected": 2,
     "duplicates": 0,
-    "errors": 163,
+    "errors": 0,
     "targets": 55,
-    "api_call_count": 491,
-    "rate_limit_errors": 469,
+    "api_call_count": 7,
+    "rate_limit_errors": 0,
     "correct_index_distribution_generated": {
       "0": 1,
-      "1": 1,
-      "2": 0,
-      "3": 0
+      "1": 0,
+      "2": 3,
+      "3": 1
     }
   },
   "normalization": {
@@ -345,36 +345,36 @@
     ]
   },
   "last_refill_result": {
-    "recorded_at": "2026-06-19T05:35:37Z",
+    "recorded_at": "2026-06-20T04:26:51Z",
     "model": "gemini-3.5-flash",
     "bank_version": "gemini35_v1",
     "mode": "daily",
-    "target_accepts": 7,
-    "generated": 2,
-    "accepted": 2,
+    "target_accepts": 5,
+    "generated": 7,
+    "accepted": 5,
     "queued_for_review": 0,
-    "rejected": 0,
+    "rejected": 2,
     "duplicates": 0,
-    "errors": 163,
-    "api_call_count": 491,
-    "rate_limit_errors": 469,
+    "errors": 0,
+    "api_call_count": 7,
+    "rate_limit_errors": 0,
     "correct_index_distribution_before": {
-      "0": 39,
-      "1": 51,
+      "0": 40,
+      "1": 52,
       "2": 46,
       "3": 46
     },
     "correct_index_distribution_generated": {
       "0": 1,
-      "1": 1,
-      "2": 0,
-      "3": 0
+      "1": 0,
+      "2": 3,
+      "3": 1
     },
     "correct_index_distribution_after": {
-      "0": 40,
+      "0": 41,
       "1": 52,
-      "2": 46,
-      "3": 46
+      "2": 49,
+      "3": 47
     }
   }
 }
