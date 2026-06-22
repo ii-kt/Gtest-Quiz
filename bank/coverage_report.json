@@ -1,9 +1,9 @@
 {
   "schema_version": "gtest_quiz_coverage_report_v1",
-  "generated_at": "2026-06-21T05:15:45Z",
+  "generated_at": "2026-06-22T05:23:37Z",
   "bank_version": "gemini35_v1",
   "model": "gemini-3.5-flash",
-  "total_questions": 199,
+  "total_questions": 204,
   "target_complete_questions": 550,
   "target_expanded_questions": 1000,
   "expected_chapters": 55,
@@ -12,9 +12,9 @@
   "extra_chapters": [],
   "correct_index_distribution": {
     "0": 43,
-    "1": 55,
-    "2": 52,
-    "3": 49
+    "1": 56,
+    "2": 53,
+    "3": 52
   },
   "correct_index_window_issues": [],
   "active_review_warning_count": 0,
@@ -80,17 +80,17 @@
     {
       "chapter_group": "人工知能をめぐる動向",
       "chapter_id": "4. 知識表現とエキスパートシステム",
-      "question_count": 3,
+      "question_count": 4,
       "difficulty_distribution": {
         "basic": 0,
-        "standard": 3,
+        "standard": 4,
         "advanced": 0
       },
       "correct_index_distribution": {
         "0": 0,
         "1": 1,
         "2": 0,
-        "3": 2
+        "3": 3
       },
       "legal_source_missing": 0,
       "review_warning_count": 0
@@ -134,16 +134,16 @@
     {
       "chapter_group": "機械学習の概要",
       "chapter_id": "7. 教師あり学習",
-      "question_count": 3,
+      "question_count": 4,
       "difficulty_distribution": {
         "basic": 0,
-        "standard": 3,
+        "standard": 4,
         "advanced": 0
       },
       "correct_index_distribution": {
         "0": 0,
         "1": 1,
-        "2": 1,
+        "2": 2,
         "3": 1
       },
       "legal_source_missing": 0,
@@ -170,15 +170,15 @@
     {
       "chapter_group": "機械学習の概要",
       "chapter_id": "9. 強化学習",
-      "question_count": 3,
+      "question_count": 4,
       "difficulty_distribution": {
         "basic": 0,
-        "standard": 3,
+        "standard": 4,
         "advanced": 0
       },
       "correct_index_distribution": {
         "0": 1,
-        "1": 1,
+        "1": 2,
         "2": 1,
         "3": 0
       },
@@ -350,17 +350,17 @@
     {
       "chapter_group": "ディープラーニングの要素技術",
       "chapter_id": "19. 正規化層",
-      "question_count": 3,
+      "question_count": 4,
       "difficulty_distribution": {
         "basic": 0,
-        "standard": 3,
+        "standard": 4,
         "advanced": 0
       },
       "correct_index_distribution": {
         "0": 1,
         "1": 1,
         "2": 1,
-        "3": 0
+        "3": 1
       },
       "legal_source_missing": 0,
       "review_warning_count": 0
@@ -548,17 +548,17 @@
     {
       "chapter_group": "ディープラーニングの応用例",
       "chapter_id": "30. データ生成",
-      "question_count": 3,
+      "question_count": 4,
       "difficulty_distribution": {
         "basic": 0,
-        "standard": 3,
+        "standard": 4,
         "advanced": 0
       },
       "correct_index_distribution": {
         "0": 1,
         "1": 1,
         "2": 0,
-        "3": 1
+        "3": 2
       },
       "legal_source_missing": 0,
       "review_warning_count": 0
@@ -1056,24 +1056,24 @@
       "difficulty_balance_failures": []
     }
   },
-  "review_queue_total": 117,
+  "review_queue_total": 122,
   "review_queue_by_decision": {
     "error": 13,
-    "reject": 101,
+    "reject": 106,
     "review": 3
   },
   "reject_reason_top": [
     {
       "reason": "explanation should distinguish incorrect choices",
-      "count": 93
+      "count": 98
     },
     {
       "reason": "explanation does not distinguish distractors",
-      "count": 82
+      "count": 87
     },
     {
       "reason": "explanation should include the reason for the correct answer",
-      "count": 48
+      "count": 50
     },
     {
       "reason": "explanation does not clearly state why the answer is correct",
