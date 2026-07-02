@@ -1,7 +1,7 @@
 {
   "version": 1,
   "created_at": "1970-01-01T00:00:00Z",
-  "updated_at": "2026-07-01T04:48:32Z",
+  "updated_at": "2026-07-02T04:17:26Z",
   "usage": {
     "total_questions": 0,
     "online_questions": 0,
@@ -14,7 +14,7 @@
     "last_error": null
   },
   "chapter_stats": {},
-  "last_chapter_id": "31. 転移学習・ファインチューニング",
+  "last_chapter_id": "1. 個人情報保護法",
   "chapters": {
     "01_人工知能とは": {
       "label": "人工知能とは",
@@ -301,30 +301,30 @@
   "question_bank": {
     "path": "bank/question_bank.jsonl",
     "bank_version": "gemini35_v1",
-    "total_questions": 229,
-    "updated_at": "2026-07-01T04:48:32Z"
+    "total_questions": 239,
+    "updated_at": "2026-07-02T04:17:26Z"
   },
   "content_factory": {
-    "last_refill_at": "2026-07-01T04:48:32Z",
+    "last_refill_at": "2026-07-02T04:17:26Z",
     "model": "gemini-3.5-flash",
     "bank_version": "gemini35_v1",
     "mode": "daily",
     "prompt_version": "gtest_factory_gemini35_v1_2026-05-26",
-    "target_accepts": 5,
-    "generated": 5,
-    "accepted": 5,
+    "target_accepts": 10,
+    "generated": 18,
+    "accepted": 10,
     "queued_for_review": 0,
-    "rejected": 0,
+    "rejected": 8,
     "duplicates": 0,
-    "errors": 0,
+    "errors": 2,
     "targets": 55,
-    "api_call_count": 5,
-    "rate_limit_errors": 0,
+    "api_call_count": 25,
+    "rate_limit_errors": 7,
     "correct_index_distribution_generated": {
       "0": 3,
-      "1": 0,
-      "2": 0,
-      "3": 2
+      "1": 1,
+      "2": 3,
+      "3": 3
     }
   },
   "normalization": {
@@ -345,36 +345,36 @@
     ]
   },
   "last_refill_result": {
-    "recorded_at": "2026-07-01T04:48:32Z",
+    "recorded_at": "2026-07-02T04:17:26Z",
     "model": "gemini-3.5-flash",
     "bank_version": "gemini35_v1",
     "mode": "daily",
-    "target_accepts": 5,
-    "generated": 5,
-    "accepted": 5,
+    "target_accepts": 10,
+    "generated": 18,
+    "accepted": 10,
     "queued_for_review": 0,
-    "rejected": 0,
+    "rejected": 8,
     "duplicates": 0,
-    "errors": 0,
-    "api_call_count": 5,
-    "rate_limit_errors": 0,
+    "errors": 2,
+    "api_call_count": 25,
+    "rate_limit_errors": 7,
     "correct_index_distribution_before": {
-      "0": 48,
-      "1": 62,
-      "2": 58,
-      "3": 56
-    },
-    "correct_index_distribution_generated": {
-      "0": 3,
-      "1": 0,
-      "2": 0,
-      "3": 2
-    },
-    "correct_index_distribution_after": {
       "0": 51,
       "1": 62,
       "2": 58,
       "3": 58
+    },
+    "correct_index_distribution_generated": {
+      "0": 3,
+      "1": 1,
+      "2": 3,
+      "3": 3
+    },
+    "correct_index_distribution_after": {
+      "0": 54,
+      "1": 63,
+      "2": 61,
+      "3": 61
     }
   }
 }
