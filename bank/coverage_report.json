@@ -1,9 +1,9 @@
 {
   "schema_version": "gtest_quiz_coverage_report_v1",
-  "generated_at": "2026-07-26T03:50:46Z",
+  "generated_at": "2026-07-28T03:31:11Z",
   "bank_version": "gemini35_v1",
   "model": "gemini-3.5-flash",
-  "total_questions": 431,
+  "total_questions": 441,
   "target_complete_questions": 550,
   "target_expanded_questions": 1000,
   "expected_chapters": 55,
@@ -11,10 +11,10 @@
   "missing_chapters": [],
   "extra_chapters": [],
   "correct_index_distribution": {
-    "0": 101,
+    "0": 104,
     "1": 112,
-    "2": 107,
-    "3": 111
+    "2": 110,
+    "3": 115
   },
   "correct_index_window_issues": [],
   "active_review_warning_count": 0,
@@ -134,9 +134,9 @@
     {
       "chapter_group": "機械学習の概要",
       "chapter_id": "7. 教師あり学習",
-      "question_count": 8,
+      "question_count": 9,
       "difficulty_distribution": {
-        "basic": 1,
+        "basic": 2,
         "standard": 6,
         "advanced": 1
       },
@@ -144,7 +144,7 @@
         "0": 1,
         "1": 1,
         "2": 3,
-        "3": 3
+        "3": 4
       },
       "legal_source_missing": 0,
       "review_warning_count": 0
@@ -224,17 +224,17 @@
     {
       "chapter_group": "ディープラーニングの概要",
       "chapter_id": "12. 活性化関数",
-      "question_count": 7,
+      "question_count": 8,
       "difficulty_distribution": {
         "basic": 1,
-        "standard": 5,
+        "standard": 6,
         "advanced": 1
       },
       "correct_index_distribution": {
         "0": 0,
         "1": 2,
         "2": 3,
-        "3": 2
+        "3": 3
       },
       "legal_source_missing": 0,
       "review_warning_count": 0
@@ -296,14 +296,14 @@
     {
       "chapter_group": "ディープラーニングの概要",
       "chapter_id": "16. 最適化手法",
-      "question_count": 7,
+      "question_count": 8,
       "difficulty_distribution": {
         "basic": 1,
-        "standard": 5,
+        "standard": 6,
         "advanced": 1
       },
       "correct_index_distribution": {
-        "0": 3,
+        "0": 4,
         "1": 1,
         "2": 2,
         "3": 1
@@ -422,17 +422,17 @@
     {
       "chapter_group": "ディープラーニングの要素技術",
       "chapter_id": "23. Attention",
-      "question_count": 7,
+      "question_count": 8,
       "difficulty_distribution": {
         "basic": 1,
-        "standard": 5,
+        "standard": 6,
         "advanced": 1
       },
       "correct_index_distribution": {
         "0": 1,
         "1": 3,
         "2": 0,
-        "3": 3
+        "3": 4
       },
       "legal_source_missing": 0,
       "review_warning_count": 0
@@ -440,16 +440,16 @@
     {
       "chapter_group": "ディープラーニングの要素技術",
       "chapter_id": "24. オートエンコーダ",
-      "question_count": 7,
+      "question_count": 8,
       "difficulty_distribution": {
         "basic": 1,
-        "standard": 5,
+        "standard": 6,
         "advanced": 1
       },
       "correct_index_distribution": {
         "0": 0,
         "1": 2,
-        "2": 3,
+        "2": 4,
         "3": 2
       },
       "legal_source_missing": 0,
@@ -476,14 +476,14 @@
     {
       "chapter_group": "ディープラーニングの応用例",
       "chapter_id": "26. 画像認識",
-      "question_count": 7,
+      "question_count": 8,
       "difficulty_distribution": {
         "basic": 1,
-        "standard": 5,
+        "standard": 6,
         "advanced": 1
       },
       "correct_index_distribution": {
-        "0": 1,
+        "0": 2,
         "1": 2,
         "2": 3,
         "3": 1
@@ -602,14 +602,14 @@
     {
       "chapter_group": "ディープラーニングの応用例",
       "chapter_id": "33. モデルの解釈性",
-      "question_count": 7,
+      "question_count": 8,
       "difficulty_distribution": {
         "basic": 1,
-        "standard": 5,
+        "standard": 6,
         "advanced": 1
       },
       "correct_index_distribution": {
-        "0": 1,
+        "0": 2,
         "1": 5,
         "2": 1,
         "3": 0
@@ -656,16 +656,16 @@
     {
       "chapter_group": "AIの社会実装に向けて",
       "chapter_id": "36. データの収集・加工・分析・学習",
-      "question_count": 7,
+      "question_count": 8,
       "difficulty_distribution": {
         "basic": 1,
-        "standard": 5,
+        "standard": 6,
         "advanced": 1
       },
       "correct_index_distribution": {
         "0": 2,
         "1": 4,
-        "2": 1,
+        "2": 2,
         "3": 0
       },
       "legal_source_missing": 0,
@@ -764,16 +764,16 @@
     {
       "chapter_group": "AIに関する法律と契約",
       "chapter_id": "5. 独占禁止法",
-      "question_count": 7,
+      "question_count": 8,
       "difficulty_distribution": {
         "basic": 1,
-        "standard": 5,
+        "standard": 6,
         "advanced": 1
       },
       "correct_index_distribution": {
         "0": 1,
         "1": 1,
-        "2": 3,
+        "2": 4,
         "3": 2
       },
       "legal_source_missing": 0,
@@ -836,17 +836,17 @@
     {
       "chapter_group": "AI倫理・AIガバナンス",
       "chapter_id": "9. プライバシー",
-      "question_count": 7,
+      "question_count": 8,
       "difficulty_distribution": {
         "basic": 1,
-        "standard": 5,
+        "standard": 6,
         "advanced": 1
       },
       "correct_index_distribution": {
         "0": 1,
         "1": 1,
         "2": 2,
-        "3": 3
+        "3": 4
       },
       "legal_source_missing": 0,
       "review_warning_count": 0
@@ -1056,28 +1056,28 @@
       "difficulty_balance_failures": []
     }
   },
-  "review_queue_total": 274,
+  "review_queue_total": 279,
   "review_queue_by_decision": {
     "error": 34,
-    "reject": 233,
+    "reject": 238,
     "review": 7
   },
   "reject_reason_top": [
     {
       "reason": "explanation should distinguish incorrect choices",
-      "count": 220
+      "count": 225
     },
     {
       "reason": "explanation does not distinguish distractors",
-      "count": 183
+      "count": 188
     },
     {
       "reason": "explanation should include the reason for the correct answer",
-      "count": 104
+      "count": 108
     },
     {
       "reason": "explanation does not clearly state why the answer is correct",
-      "count": 35
+      "count": 36
     },
     {
       "reason": "503 UNAVAILABLE. {'error': {'code': 503, 'message': 'This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.', 'status': 'UNAVAILABLE'}}",
