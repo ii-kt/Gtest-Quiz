@@ -1,9 +1,9 @@
 {
   "schema_version": "gtest_quiz_coverage_report_v1",
-  "generated_at": "2026-08-01T03:43:57Z",
+  "generated_at": "2026-08-02T03:42:48Z",
   "bank_version": "gemini35_v1",
   "model": "gemini-3.5-flash",
-  "total_questions": 470,
+  "total_questions": 475,
   "target_complete_questions": 550,
   "target_expanded_questions": 1000,
   "expected_chapters": 55,
@@ -11,10 +11,10 @@
   "missing_chapters": [],
   "extra_chapters": [],
   "correct_index_distribution": {
-    "0": 113,
-    "1": 117,
-    "2": 119,
-    "3": 121
+    "0": 114,
+    "1": 118,
+    "2": 121,
+    "3": 122
   },
   "correct_index_window_issues": [],
   "active_review_warning_count": 0,
@@ -26,15 +26,15 @@
     {
       "chapter_group": "人工知能とは",
       "chapter_id": "1. 人工知能の定義",
-      "question_count": 8,
+      "question_count": 9,
       "difficulty_distribution": {
-        "basic": 1,
+        "basic": 2,
         "standard": 6,
         "advanced": 1
       },
       "correct_index_distribution": {
         "0": 3,
-        "1": 3,
+        "1": 4,
         "2": 2,
         "3": 0
       },
@@ -188,9 +188,9 @@
     {
       "chapter_group": "機械学習の概要",
       "chapter_id": "10. モデルの選択・評価",
-      "question_count": 8,
+      "question_count": 9,
       "difficulty_distribution": {
-        "basic": 1,
+        "basic": 2,
         "standard": 6,
         "advanced": 1
       },
@@ -198,7 +198,7 @@
         "0": 3,
         "1": 3,
         "2": 0,
-        "3": 2
+        "3": 3
       },
       "legal_source_missing": 0,
       "review_warning_count": 0
@@ -224,14 +224,14 @@
     {
       "chapter_group": "ディープラーニングの概要",
       "chapter_id": "12. 活性化関数",
-      "question_count": 8,
+      "question_count": 9,
       "difficulty_distribution": {
-        "basic": 1,
+        "basic": 2,
         "standard": 6,
         "advanced": 1
       },
       "correct_index_distribution": {
-        "0": 0,
+        "0": 1,
         "1": 2,
         "2": 3,
         "3": 3
@@ -440,16 +440,16 @@
     {
       "chapter_group": "ディープラーニングの要素技術",
       "chapter_id": "24. オートエンコーダ",
-      "question_count": 8,
+      "question_count": 9,
       "difficulty_distribution": {
-        "basic": 1,
+        "basic": 2,
         "standard": 6,
         "advanced": 1
       },
       "correct_index_distribution": {
         "0": 0,
         "1": 2,
-        "2": 4,
+        "2": 5,
         "3": 2
       },
       "legal_source_missing": 0,
@@ -566,16 +566,16 @@
     {
       "chapter_group": "ディープラーニングの応用例",
       "chapter_id": "31. 転移学習・ファインチューニング",
-      "question_count": 8,
+      "question_count": 9,
       "difficulty_distribution": {
-        "basic": 1,
+        "basic": 2,
         "standard": 6,
         "advanced": 1
       },
       "correct_index_distribution": {
         "0": 2,
         "1": 4,
-        "2": 1,
+        "2": 2,
         "3": 1
       },
       "legal_source_missing": 0,
@@ -1056,28 +1056,28 @@
       "difficulty_balance_failures": []
     }
   },
-  "review_queue_total": 298,
+  "review_queue_total": 300,
   "review_queue_by_decision": {
     "error": 34,
-    "reject": 255,
+    "reject": 257,
     "review": 9
   },
   "reject_reason_top": [
     {
       "reason": "explanation should distinguish incorrect choices",
-      "count": 240
+      "count": 241
     },
     {
       "reason": "explanation does not distinguish distractors",
-      "count": 202
+      "count": 203
     },
     {
       "reason": "explanation should include the reason for the correct answer",
-      "count": 115
+      "count": 116
     },
     {
       "reason": "explanation does not clearly state why the answer is correct",
-      "count": 39
+      "count": 40
     },
     {
       "reason": "503 UNAVAILABLE. {'error': {'code': 503, 'message': 'This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.', 'status': 'UNAVAILABLE'}}",
