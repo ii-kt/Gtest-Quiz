@@ -1,9 +1,9 @@
 {
   "schema_version": "gtest_quiz_coverage_report_v1",
-  "generated_at": "2026-08-03T03:44:36Z",
+  "generated_at": "2026-08-04T03:30:29Z",
   "bank_version": "gemini35_v1",
   "model": "gemini-3.5-flash",
-  "total_questions": 480,
+  "total_questions": 490,
   "target_complete_questions": 550,
   "target_expanded_questions": 1000,
   "expected_chapters": 55,
@@ -11,10 +11,10 @@
   "missing_chapters": [],
   "extra_chapters": [],
   "correct_index_distribution": {
-    "0": 115,
-    "1": 119,
-    "2": 123,
-    "3": 123
+    "0": 119,
+    "1": 120,
+    "2": 126,
+    "3": 125
   },
   "correct_index_window_issues": [],
   "active_review_warning_count": 0,
@@ -62,14 +62,14 @@
     {
       "chapter_group": "人工知能をめぐる動向",
       "chapter_id": "3. 探索・推論",
-      "question_count": 8,
+      "question_count": 9,
       "difficulty_distribution": {
-        "basic": 1,
+        "basic": 2,
         "standard": 6,
         "advanced": 1
       },
       "correct_index_distribution": {
-        "0": 1,
+        "0": 2,
         "1": 3,
         "2": 2,
         "3": 2
@@ -116,9 +116,9 @@
     {
       "chapter_group": "人工知能をめぐる動向",
       "chapter_id": "6. ディープラーニング",
-      "question_count": 8,
+      "question_count": 9,
       "difficulty_distribution": {
-        "basic": 1,
+        "basic": 2,
         "standard": 6,
         "advanced": 1
       },
@@ -126,7 +126,7 @@
         "0": 3,
         "1": 1,
         "2": 3,
-        "3": 1
+        "3": 2
       },
       "legal_source_missing": 0,
       "review_warning_count": 0
@@ -242,14 +242,14 @@
     {
       "chapter_group": "ディープラーニングの概要",
       "chapter_id": "13. 誤差関数",
-      "question_count": 8,
+      "question_count": 9,
       "difficulty_distribution": {
-        "basic": 1,
+        "basic": 2,
         "standard": 6,
         "advanced": 1
       },
       "correct_index_distribution": {
-        "0": 3,
+        "0": 4,
         "1": 1,
         "2": 1,
         "3": 3
@@ -350,16 +350,16 @@
     {
       "chapter_group": "ディープラーニングの要素技術",
       "chapter_id": "19. 正規化層",
-      "question_count": 8,
+      "question_count": 9,
       "difficulty_distribution": {
-        "basic": 1,
+        "basic": 2,
         "standard": 6,
         "advanced": 1
       },
       "correct_index_distribution": {
         "0": 2,
         "1": 1,
-        "2": 2,
+        "2": 3,
         "3": 3
       },
       "legal_source_missing": 0,
@@ -368,16 +368,16 @@
     {
       "chapter_group": "ディープラーニングの要素技術",
       "chapter_id": "20. プーリング層",
-      "question_count": 8,
+      "question_count": 9,
       "difficulty_distribution": {
-        "basic": 1,
+        "basic": 2,
         "standard": 6,
         "advanced": 1
       },
       "correct_index_distribution": {
         "0": 4,
         "1": 2,
-        "2": 0,
+        "2": 1,
         "3": 2
       },
       "legal_source_missing": 0,
@@ -476,9 +476,9 @@
     {
       "chapter_group": "ディープラーニングの応用例",
       "chapter_id": "26. 画像認識",
-      "question_count": 8,
+      "question_count": 9,
       "difficulty_distribution": {
-        "basic": 1,
+        "basic": 2,
         "standard": 6,
         "advanced": 1
       },
@@ -486,7 +486,7 @@
         "0": 2,
         "1": 2,
         "2": 3,
-        "3": 1
+        "3": 2
       },
       "legal_source_missing": 0,
       "review_warning_count": 0
@@ -674,14 +674,14 @@
     {
       "chapter_group": "AIに必要な数理・統計知識",
       "chapter_id": "37. AIに必要な数理・統計知識",
-      "question_count": 8,
+      "question_count": 9,
       "difficulty_distribution": {
-        "basic": 1,
+        "basic": 2,
         "standard": 6,
         "advanced": 1
       },
       "correct_index_distribution": {
-        "0": 2,
+        "0": 3,
         "1": 3,
         "2": 1,
         "3": 2
@@ -710,16 +710,16 @@
     {
       "chapter_group": "AIに関する法律と契約",
       "chapter_id": "2. 著作権法",
-      "question_count": 8,
+      "question_count": 9,
       "difficulty_distribution": {
-        "basic": 1,
+        "basic": 2,
         "standard": 6,
         "advanced": 1
       },
       "correct_index_distribution": {
         "0": 3,
         "1": 1,
-        "2": 2,
+        "2": 3,
         "3": 2
       },
       "legal_source_missing": 0,
@@ -854,14 +854,14 @@
     {
       "chapter_group": "AI倫理・AIガバナンス",
       "chapter_id": "10. 公平性",
-      "question_count": 8,
+      "question_count": 9,
       "difficulty_distribution": {
-        "basic": 1,
+        "basic": 2,
         "standard": 6,
         "advanced": 1
       },
       "correct_index_distribution": {
-        "0": 2,
+        "0": 3,
         "1": 1,
         "2": 3,
         "3": 2
@@ -944,15 +944,15 @@
     {
       "chapter_group": "AI倫理・AIガバナンス",
       "chapter_id": "15. 環境保護",
-      "question_count": 8,
+      "question_count": 9,
       "difficulty_distribution": {
-        "basic": 1,
+        "basic": 2,
         "standard": 6,
         "advanced": 1
       },
       "correct_index_distribution": {
         "0": 3,
-        "1": 1,
+        "1": 2,
         "2": 1,
         "3": 3
       },
@@ -1056,28 +1056,28 @@
       "difficulty_balance_failures": []
     }
   },
-  "review_queue_total": 300,
+  "review_queue_total": 305,
   "review_queue_by_decision": {
     "error": 34,
-    "reject": 257,
-    "review": 9
+    "reject": 261,
+    "review": 10
   },
   "reject_reason_top": [
     {
       "reason": "explanation should distinguish incorrect choices",
-      "count": 241
+      "count": 245
     },
     {
       "reason": "explanation does not distinguish distractors",
-      "count": 203
+      "count": 205
     },
     {
       "reason": "explanation should include the reason for the correct answer",
-      "count": 116
+      "count": 117
     },
     {
       "reason": "explanation does not clearly state why the answer is correct",
-      "count": 40
+      "count": 41
     },
     {
       "reason": "503 UNAVAILABLE. {'error': {'code': 503, 'message': 'This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.', 'status': 'UNAVAILABLE'}}",
@@ -1085,11 +1085,11 @@
     },
     {
       "reason": "concept tags are missing",
-      "count": 28
+      "count": 29
     },
     {
       "reason": "legal or guideline question is missing official source metadata: source_url, source_title, source_version, source_checked_at, legal_basis",
-      "count": 24
+      "count": 27
     },
     {
       "reason": "legal or guideline question is missing official source metadata: source_url",
