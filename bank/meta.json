@@ -1,7 +1,7 @@
 {
   "version": 1,
   "created_at": "1970-01-01T00:00:00Z",
-  "updated_at": "2026-08-04T03:30:21Z",
+  "updated_at": "2026-08-05T03:28:14Z",
   "usage": {
     "total_questions": 0,
     "online_questions": 0,
@@ -14,7 +14,7 @@
     "last_error": null
   },
   "chapter_stats": {},
-  "last_chapter_id": "19. 正規化層",
+  "last_chapter_id": "16. 最適化手法",
   "chapters": {
     "01_人工知能とは": {
       "label": "人工知能とは",
@@ -301,29 +301,29 @@
   "question_bank": {
     "path": "bank/question_bank.jsonl",
     "bank_version": "gemini35_v1",
-    "total_questions": 490,
-    "updated_at": "2026-08-04T03:30:21Z"
+    "total_questions": 495,
+    "updated_at": "2026-08-05T03:28:14Z"
   },
   "content_factory": {
-    "last_refill_at": "2026-08-04T03:30:21Z",
+    "last_refill_at": "2026-08-05T03:28:14Z",
     "model": "gemini-3.5-flash",
     "bank_version": "gemini35_v1",
     "mode": "daily",
     "prompt_version": "gtest_factory_gemini35_v1_2026-05-26",
-    "target_accepts": 10,
-    "generated": 15,
-    "accepted": 10,
-    "queued_for_review": 1,
-    "rejected": 4,
+    "target_accepts": 5,
+    "generated": 10,
+    "accepted": 5,
+    "queued_for_review": 2,
+    "rejected": 3,
     "duplicates": 0,
-    "errors": 0,
+    "errors": 2,
     "targets": 55,
-    "api_call_count": 20,
-    "rate_limit_errors": 5,
+    "api_call_count": 18,
+    "rate_limit_errors": 0,
     "correct_index_distribution_generated": {
-      "0": 4,
+      "0": 2,
       "1": 1,
-      "2": 3,
+      "2": 0,
       "3": 2
     }
   },
@@ -345,36 +345,36 @@
     ]
   },
   "last_refill_result": {
-    "recorded_at": "2026-08-04T03:30:21Z",
+    "recorded_at": "2026-08-05T03:28:14Z",
     "model": "gemini-3.5-flash",
     "bank_version": "gemini35_v1",
     "mode": "daily",
-    "target_accepts": 10,
-    "generated": 15,
-    "accepted": 10,
-    "queued_for_review": 1,
-    "rejected": 4,
+    "target_accepts": 5,
+    "generated": 10,
+    "accepted": 5,
+    "queued_for_review": 2,
+    "rejected": 3,
     "duplicates": 0,
-    "errors": 0,
-    "api_call_count": 20,
-    "rate_limit_errors": 5,
+    "errors": 2,
+    "api_call_count": 18,
+    "rate_limit_errors": 0,
     "correct_index_distribution_before": {
-      "0": 115,
-      "1": 119,
-      "2": 123,
-      "3": 123
-    },
-    "correct_index_distribution_generated": {
-      "0": 4,
-      "1": 1,
-      "2": 3,
-      "3": 2
-    },
-    "correct_index_distribution_after": {
       "0": 119,
       "1": 120,
       "2": 126,
       "3": 125
+    },
+    "correct_index_distribution_generated": {
+      "0": 2,
+      "1": 1,
+      "2": 0,
+      "3": 2
+    },
+    "correct_index_distribution_after": {
+      "0": 121,
+      "1": 121,
+      "2": 126,
+      "3": 127
     }
   }
 }
