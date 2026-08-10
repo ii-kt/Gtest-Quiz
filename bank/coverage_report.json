@@ -1,9 +1,9 @@
 {
   "schema_version": "gtest_quiz_coverage_report_v1",
-  "generated_at": "2026-08-07T03:13:16Z",
+  "generated_at": "2026-08-10T02:28:53Z",
   "bank_version": "gemini35_v1",
   "model": "gemini-3.5-flash",
-  "total_questions": 510,
+  "total_questions": 520,
   "target_complete_questions": 550,
   "target_expanded_questions": 1000,
   "expected_chapters": 55,
@@ -11,10 +11,10 @@
   "missing_chapters": [],
   "extra_chapters": [],
   "correct_index_distribution": {
-    "0": 127,
-    "1": 126,
-    "2": 129,
-    "3": 128
+    "0": 129,
+    "1": 129,
+    "2": 132,
+    "3": 130
   },
   "correct_index_window_issues": [],
   "active_review_warning_count": 0,
@@ -152,16 +152,16 @@
     {
       "chapter_group": "機械学習の概要",
       "chapter_id": "8. 教師なし学習",
-      "question_count": 11,
+      "question_count": 12,
       "difficulty_distribution": {
         "basic": 3,
         "standard": 6,
-        "advanced": 2
+        "advanced": 3
       },
       "correct_index_distribution": {
         "0": 3,
         "1": 4,
-        "2": 0,
+        "2": 1,
         "3": 4
       },
       "legal_source_missing": 0,
@@ -206,16 +206,16 @@
     {
       "chapter_group": "ディープラーニングの概要",
       "chapter_id": "11. ニューラルネットワークとディープラーニング",
-      "question_count": 11,
+      "question_count": 12,
       "difficulty_distribution": {
         "basic": 3,
         "standard": 6,
-        "advanced": 2
+        "advanced": 3
       },
       "correct_index_distribution": {
         "0": 2,
         "1": 1,
-        "2": 7,
+        "2": 8,
         "3": 1
       },
       "legal_source_missing": 0,
@@ -278,15 +278,15 @@
     {
       "chapter_group": "ディープラーニングの概要",
       "chapter_id": "15. 誤差逆伝播法",
-      "question_count": 11,
+      "question_count": 12,
       "difficulty_distribution": {
         "basic": 3,
         "standard": 6,
-        "advanced": 2
+        "advanced": 3
       },
       "correct_index_distribution": {
         "0": 3,
-        "1": 2,
+        "1": 3,
         "2": 0,
         "3": 6
       },
@@ -296,14 +296,14 @@
     {
       "chapter_group": "ディープラーニングの概要",
       "chapter_id": "16. 最適化手法",
-      "question_count": 11,
+      "question_count": 12,
       "difficulty_distribution": {
         "basic": 3,
         "standard": 6,
-        "advanced": 2
+        "advanced": 3
       },
       "correct_index_distribution": {
-        "0": 6,
+        "0": 7,
         "1": 1,
         "2": 2,
         "3": 2
@@ -404,17 +404,17 @@
     {
       "chapter_group": "ディープラーニングの要素技術",
       "chapter_id": "22. 回帰結合層",
-      "question_count": 11,
+      "question_count": 12,
       "difficulty_distribution": {
         "basic": 3,
         "standard": 6,
-        "advanced": 2
+        "advanced": 3
       },
       "correct_index_distribution": {
         "0": 2,
         "1": 4,
         "2": 2,
-        "3": 3
+        "3": 4
       },
       "legal_source_missing": 0,
       "review_warning_count": 0
@@ -458,16 +458,16 @@
     {
       "chapter_group": "ディープラーニングの要素技術",
       "chapter_id": "25. データ拡張",
-      "question_count": 10,
+      "question_count": 11,
       "difficulty_distribution": {
-        "basic": 2,
+        "basic": 3,
         "standard": 6,
         "advanced": 2
       },
       "correct_index_distribution": {
         "0": 4,
         "1": 4,
-        "2": 0,
+        "2": 1,
         "3": 2
       },
       "legal_source_missing": 0,
@@ -566,15 +566,15 @@
     {
       "chapter_group": "ディープラーニングの応用例",
       "chapter_id": "31. 転移学習・ファインチューニング",
-      "question_count": 11,
+      "question_count": 12,
       "difficulty_distribution": {
         "basic": 3,
         "standard": 6,
-        "advanced": 2
+        "advanced": 3
       },
       "correct_index_distribution": {
         "0": 3,
-        "1": 5,
+        "1": 6,
         "2": 2,
         "3": 1
       },
@@ -728,15 +728,15 @@
     {
       "chapter_group": "AIに関する法律と契約",
       "chapter_id": "3. 特許法",
-      "question_count": 11,
+      "question_count": 12,
       "difficulty_distribution": {
         "basic": 3,
         "standard": 6,
-        "advanced": 2
+        "advanced": 3
       },
       "correct_index_distribution": {
         "0": 1,
-        "1": 2,
+        "1": 3,
         "2": 4,
         "3": 4
       },
@@ -782,9 +782,9 @@
     {
       "chapter_group": "AIに関する法律と契約",
       "chapter_id": "6. AI開発委託契約",
-      "question_count": 10,
+      "question_count": 11,
       "difficulty_distribution": {
-        "basic": 2,
+        "basic": 3,
         "standard": 6,
         "advanced": 2
       },
@@ -792,7 +792,7 @@
         "0": 1,
         "1": 4,
         "2": 3,
-        "3": 2
+        "3": 3
       },
       "legal_source_missing": 0,
       "review_warning_count": 0
@@ -800,14 +800,14 @@
     {
       "chapter_group": "AIに関する法律と契約",
       "chapter_id": "7. AIサービス提供契約",
-      "question_count": 10,
+      "question_count": 11,
       "difficulty_distribution": {
-        "basic": 2,
+        "basic": 3,
         "standard": 6,
         "advanced": 2
       },
       "correct_index_distribution": {
-        "0": 2,
+        "0": 3,
         "1": 2,
         "2": 4,
         "3": 2
@@ -1056,24 +1056,24 @@
       "difficulty_balance_failures": []
     }
   },
-  "review_queue_total": 316,
+  "review_queue_total": 320,
   "review_queue_by_decision": {
     "error": 36,
-    "reject": 267,
-    "review": 13
+    "reject": 269,
+    "review": 15
   },
   "reject_reason_top": [
     {
       "reason": "explanation should distinguish incorrect choices",
-      "count": 251
+      "count": 253
     },
     {
       "reason": "explanation does not distinguish distractors",
-      "count": 209
+      "count": 211
     },
     {
       "reason": "explanation should include the reason for the correct answer",
-      "count": 119
+      "count": 120
     },
     {
       "reason": "explanation does not clearly state why the answer is correct",
@@ -1084,12 +1084,12 @@
       "count": 36
     },
     {
-      "reason": "legal or guideline question is missing official source metadata: source_url, source_title, source_version, source_checked_at, legal_basis",
-      "count": 31
+      "reason": "concept tags are missing",
+      "count": 32
     },
     {
-      "reason": "concept tags are missing",
-      "count": 30
+      "reason": "legal or guideline question is missing official source metadata: source_url, source_title, source_version, source_checked_at, legal_basis",
+      "count": 31
     },
     {
       "reason": "legal or guideline question is missing official source metadata: source_url",
