@@ -1,7 +1,7 @@
 {
   "version": 1,
   "created_at": "1970-01-01T00:00:00Z",
-  "updated_at": "2026-08-20T01:49:17Z",
+  "updated_at": "2026-08-21T01:52:46Z",
   "usage": {
     "total_questions": 0,
     "online_questions": 0,
@@ -14,7 +14,7 @@
     "last_error": null
   },
   "chapter_stats": {},
-  "last_chapter_id": "14. 民主主義",
+  "last_chapter_id": "6. AI開発委託契約",
   "chapters": {
     "01_人工知能とは": {
       "label": "人工知能とは",
@@ -301,30 +301,30 @@
   "question_bank": {
     "path": "bank/question_bank.jsonl",
     "bank_version": "gemini35_v1",
-    "total_questions": 595,
-    "updated_at": "2026-08-20T01:49:17Z"
+    "total_questions": 603,
+    "updated_at": "2026-08-21T01:52:46Z"
   },
   "content_factory": {
-    "last_refill_at": "2026-08-20T01:49:17Z",
+    "last_refill_at": "2026-08-21T01:52:46Z",
     "model": "gemini-3.5-flash",
     "bank_version": "gemini35_v1",
     "mode": "daily",
     "prompt_version": "gtest_factory_gemini35_v1_2026-05-26",
-    "target_accepts": 16,
-    "generated": 22,
-    "accepted": 16,
+    "target_accepts": 8,
+    "generated": 20,
+    "accepted": 8,
     "queued_for_review": 0,
-    "rejected": 6,
-    "duplicates": 0,
-    "errors": 17,
+    "rejected": 11,
+    "duplicates": 1,
+    "errors": 8,
     "targets": 55,
-    "api_call_count": 75,
-    "rate_limit_errors": 53,
+    "api_call_count": 49,
+    "rate_limit_errors": 29,
     "correct_index_distribution_generated": {
-      "0": 2,
-      "1": 5,
-      "2": 3,
-      "3": 6
+      "0": 3,
+      "1": 1,
+      "2": 2,
+      "3": 2
     }
   },
   "normalization": {
@@ -345,36 +345,36 @@
     ]
   },
   "last_refill_result": {
-    "recorded_at": "2026-08-20T01:49:17Z",
+    "recorded_at": "2026-08-21T01:52:46Z",
     "model": "gemini-3.5-flash",
     "bank_version": "gemini35_v1",
     "mode": "daily",
-    "target_accepts": 16,
-    "generated": 22,
-    "accepted": 16,
+    "target_accepts": 8,
+    "generated": 20,
+    "accepted": 8,
     "queued_for_review": 0,
-    "rejected": 6,
-    "duplicates": 0,
-    "errors": 17,
-    "api_call_count": 75,
-    "rate_limit_errors": 53,
+    "rejected": 11,
+    "duplicates": 1,
+    "errors": 8,
+    "api_call_count": 49,
+    "rate_limit_errors": 29,
     "correct_index_distribution_before": {
-      "0": 144,
-      "1": 142,
-      "2": 141,
-      "3": 152
-    },
-    "correct_index_distribution_generated": {
-      "0": 2,
-      "1": 5,
-      "2": 3,
-      "3": 6
-    },
-    "correct_index_distribution_after": {
       "0": 146,
       "1": 147,
       "2": 144,
       "3": 158
+    },
+    "correct_index_distribution_generated": {
+      "0": 3,
+      "1": 1,
+      "2": 2,
+      "3": 2
+    },
+    "correct_index_distribution_after": {
+      "0": 149,
+      "1": 148,
+      "2": 146,
+      "3": 160
     }
   }
 }

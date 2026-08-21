@@ -1,9 +1,9 @@
 {
   "schema_version": "gtest_quiz_coverage_report_v1",
-  "generated_at": "2026-08-20T01:49:30Z",
+  "generated_at": "2026-08-21T01:53:01Z",
   "bank_version": "gemini35_v1",
   "model": "gemini-3.5-flash",
-  "total_questions": 595,
+  "total_questions": 603,
   "target_complete_questions": 550,
   "target_expanded_questions": 1000,
   "expected_chapters": 55,
@@ -11,10 +11,10 @@
   "missing_chapters": [],
   "extra_chapters": [],
   "correct_index_distribution": {
-    "0": 146,
-    "1": 147,
-    "2": 144,
-    "3": 158
+    "0": 149,
+    "1": 148,
+    "2": 146,
+    "3": 160
   },
   "correct_index_window_issues": [],
   "active_review_warning_count": 0,
@@ -26,16 +26,16 @@
     {
       "chapter_group": "人工知能とは",
       "chapter_id": "1. 人工知能の定義",
-      "question_count": 12,
+      "question_count": 13,
       "difficulty_distribution": {
         "basic": 3,
-        "standard": 6,
+        "standard": 7,
         "advanced": 3
       },
       "correct_index_distribution": {
         "0": 3,
         "1": 6,
-        "2": 2,
+        "2": 3,
         "3": 1
       },
       "legal_source_missing": 0,
@@ -152,15 +152,15 @@
     {
       "chapter_group": "機械学習の概要",
       "chapter_id": "8. 教師なし学習",
-      "question_count": 18,
+      "question_count": 19,
       "difficulty_distribution": {
-        "basic": 4,
+        "basic": 5,
         "standard": 10,
         "advanced": 4
       },
       "correct_index_distribution": {
         "0": 6,
-        "1": 4,
+        "1": 5,
         "2": 3,
         "3": 5
       },
@@ -296,14 +296,14 @@
     {
       "chapter_group": "ディープラーニングの概要",
       "chapter_id": "16. 最適化手法",
-      "question_count": 18,
+      "question_count": 19,
       "difficulty_distribution": {
-        "basic": 4,
+        "basic": 5,
         "standard": 10,
         "advanced": 4
       },
       "correct_index_distribution": {
-        "0": 8,
+        "0": 9,
         "1": 4,
         "2": 3,
         "3": 3
@@ -350,16 +350,16 @@
     {
       "chapter_group": "ディープラーニングの要素技術",
       "chapter_id": "19. 正規化層",
-      "question_count": 10,
+      "question_count": 11,
       "difficulty_distribution": {
-        "basic": 2,
+        "basic": 3,
         "standard": 6,
         "advanced": 2
       },
       "correct_index_distribution": {
         "0": 3,
         "1": 1,
-        "2": 3,
+        "2": 4,
         "3": 3
       },
       "legal_source_missing": 0,
@@ -404,14 +404,14 @@
     {
       "chapter_group": "ディープラーニングの要素技術",
       "chapter_id": "22. 回帰結合層",
-      "question_count": 17,
+      "question_count": 18,
       "difficulty_distribution": {
         "basic": 4,
-        "standard": 9,
+        "standard": 10,
         "advanced": 4
       },
       "correct_index_distribution": {
-        "0": 3,
+        "0": 4,
         "1": 5,
         "2": 4,
         "3": 5
@@ -548,9 +548,9 @@
     {
       "chapter_group": "ディープラーニングの応用例",
       "chapter_id": "30. データ生成",
-      "question_count": 13,
+      "question_count": 14,
       "difficulty_distribution": {
-        "basic": 3,
+        "basic": 4,
         "standard": 7,
         "advanced": 3
       },
@@ -558,7 +558,7 @@
         "0": 2,
         "1": 4,
         "2": 3,
-        "3": 4
+        "3": 5
       },
       "legal_source_missing": 0,
       "review_warning_count": 0
@@ -566,9 +566,9 @@
     {
       "chapter_group": "ディープラーニングの応用例",
       "chapter_id": "31. 転移学習・ファインチューニング",
-      "question_count": 18,
+      "question_count": 19,
       "difficulty_distribution": {
-        "basic": 4,
+        "basic": 5,
         "standard": 10,
         "advanced": 4
       },
@@ -576,7 +576,7 @@
         "0": 4,
         "1": 6,
         "2": 4,
-        "3": 4
+        "3": 5
       },
       "legal_source_missing": 0,
       "review_warning_count": 0
@@ -782,14 +782,14 @@
     {
       "chapter_group": "AIに関する法律と契約",
       "chapter_id": "6. AI開発委託契約",
-      "question_count": 18,
+      "question_count": 19,
       "difficulty_distribution": {
-        "basic": 4,
+        "basic": 5,
         "standard": 10,
         "advanced": 4
       },
       "correct_index_distribution": {
-        "0": 1,
+        "0": 2,
         "1": 6,
         "2": 3,
         "3": 8
@@ -1056,28 +1056,28 @@
       "difficulty_balance_failures": []
     }
   },
-  "review_queue_total": 358,
+  "review_queue_total": 369,
   "review_queue_by_decision": {
     "error": 38,
-    "reject": 298,
+    "reject": 309,
     "review": 22
   },
   "reject_reason_top": [
     {
       "reason": "explanation should distinguish incorrect choices",
-      "count": 280
+      "count": 289
     },
     {
       "reason": "explanation does not distinguish distractors",
-      "count": 235
+      "count": 238
     },
     {
       "reason": "explanation should include the reason for the correct answer",
-      "count": 130
+      "count": 136
     },
     {
       "reason": "explanation does not clearly state why the answer is correct",
-      "count": 47
+      "count": 53
     },
     {
       "reason": "concept tags are missing",
@@ -1089,11 +1089,11 @@
     },
     {
       "reason": "legal or guideline question is missing official source metadata: source_url, source_title, source_version, source_checked_at, legal_basis",
-      "count": 31
+      "count": 32
     },
     {
-      "reason": "legal or guideline question is missing official source metadata: source_url",
-      "count": 1
+      "reason": "legal or guideline question is missing official source metadata: legal_basis",
+      "count": 2
     }
   ]
 }
