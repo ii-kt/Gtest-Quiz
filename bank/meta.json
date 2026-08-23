@@ -1,7 +1,7 @@
 {
   "version": 1,
   "created_at": "1970-01-01T00:00:00Z",
-  "updated_at": "2026-08-22T01:48:14Z",
+  "updated_at": "2026-08-23T01:54:51Z",
   "usage": {
     "total_questions": 0,
     "online_questions": 0,
@@ -14,7 +14,7 @@
     "last_error": null
   },
   "chapter_stats": {},
-  "last_chapter_id": "1. 人工知能の定義",
+  "last_chapter_id": "11. ニューラルネットワークとディープラーニング",
   "chapters": {
     "01_人工知能とは": {
       "label": "人工知能とは",
@@ -301,30 +301,30 @@
   "question_bank": {
     "path": "bank/question_bank.jsonl",
     "bank_version": "gemini35_v1",
-    "total_questions": 608,
-    "updated_at": "2026-08-22T01:48:14Z"
+    "total_questions": 618,
+    "updated_at": "2026-08-23T01:54:51Z"
   },
   "content_factory": {
-    "last_refill_at": "2026-08-22T01:48:14Z",
+    "last_refill_at": "2026-08-23T01:54:51Z",
     "model": "gemini-3.5-flash",
     "bank_version": "gemini35_v1",
     "mode": "daily",
     "prompt_version": "gtest_factory_gemini35_v1_2026-05-26",
-    "target_accepts": 5,
-    "generated": 6,
-    "accepted": 5,
-    "queued_for_review": 0,
-    "rejected": 1,
+    "target_accepts": 10,
+    "generated": 13,
+    "accepted": 10,
+    "queued_for_review": 1,
+    "rejected": 2,
     "duplicates": 0,
-    "errors": 0,
+    "errors": 3,
     "targets": 55,
-    "api_call_count": 7,
-    "rate_limit_errors": 0,
+    "api_call_count": 24,
+    "rate_limit_errors": 11,
     "correct_index_distribution_generated": {
-      "0": 0,
+      "0": 2,
       "1": 2,
-      "2": 2,
-      "3": 1
+      "2": 3,
+      "3": 3
     }
   },
   "normalization": {
@@ -345,36 +345,36 @@
     ]
   },
   "last_refill_result": {
-    "recorded_at": "2026-08-22T01:48:14Z",
+    "recorded_at": "2026-08-23T01:54:51Z",
     "model": "gemini-3.5-flash",
     "bank_version": "gemini35_v1",
     "mode": "daily",
-    "target_accepts": 5,
-    "generated": 6,
-    "accepted": 5,
-    "queued_for_review": 0,
-    "rejected": 1,
+    "target_accepts": 10,
+    "generated": 13,
+    "accepted": 10,
+    "queued_for_review": 1,
+    "rejected": 2,
     "duplicates": 0,
-    "errors": 0,
-    "api_call_count": 7,
-    "rate_limit_errors": 0,
+    "errors": 3,
+    "api_call_count": 24,
+    "rate_limit_errors": 11,
     "correct_index_distribution_before": {
-      "0": 149,
-      "1": 148,
-      "2": 146,
-      "3": 160
-    },
-    "correct_index_distribution_generated": {
-      "0": 0,
-      "1": 2,
-      "2": 2,
-      "3": 1
-    },
-    "correct_index_distribution_after": {
       "0": 149,
       "1": 150,
       "2": 148,
       "3": 161
+    },
+    "correct_index_distribution_generated": {
+      "0": 2,
+      "1": 2,
+      "2": 3,
+      "3": 3
+    },
+    "correct_index_distribution_after": {
+      "0": 151,
+      "1": 152,
+      "2": 151,
+      "3": 164
     }
   }
 }
