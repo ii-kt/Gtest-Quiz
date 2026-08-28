@@ -1,7 +1,7 @@
 {
   "version": 1,
   "created_at": "1970-01-01T00:00:00Z",
-  "updated_at": "2026-08-27T09:25:30Z",
+  "updated_at": "2026-08-28T11:15:02Z",
   "usage": {
     "total_questions": 0,
     "online_questions": 0,
@@ -14,7 +14,7 @@
     "last_error": null
   },
   "chapter_stats": {},
-  "last_chapter_id": "14. 民主主義",
+  "last_chapter_id": "1. 人工知能の定義",
   "chapters": {
     "01_人工知能とは": {
       "label": "人工知能とは",
@@ -301,30 +301,30 @@
   "question_bank": {
     "path": "bank/question_bank.jsonl",
     "bank_version": "gemini35_v1",
-    "total_questions": 638,
-    "updated_at": "2026-08-27T09:25:30Z"
+    "total_questions": 648,
+    "updated_at": "2026-08-28T11:15:02Z"
   },
   "content_factory": {
-    "last_refill_at": "2026-08-27T09:25:30Z",
+    "last_refill_at": "2026-08-28T11:15:02Z",
     "model": "gemini-3.5-flash",
     "bank_version": "gemini35_v1",
     "mode": "daily",
     "prompt_version": "gtest_factory_gemini35_v1_2026-05-26",
-    "target_accepts": 5,
-    "generated": 8,
-    "accepted": 5,
+    "target_accepts": 10,
+    "generated": 13,
+    "accepted": 10,
     "queued_for_review": 1,
     "rejected": 2,
     "duplicates": 0,
     "errors": 0,
     "targets": 55,
-    "api_call_count": 10,
+    "api_call_count": 13,
     "rate_limit_errors": 0,
     "correct_index_distribution_generated": {
       "0": 3,
-      "1": 0,
+      "1": 4,
       "2": 2,
-      "3": 0
+      "3": 1
     }
   },
   "normalization": {
@@ -345,36 +345,36 @@
     ]
   },
   "last_refill_result": {
-    "recorded_at": "2026-08-27T09:25:30Z",
+    "recorded_at": "2026-08-28T11:15:02Z",
     "model": "gemini-3.5-flash",
     "bank_version": "gemini35_v1",
     "mode": "daily",
-    "target_accepts": 5,
-    "generated": 8,
-    "accepted": 5,
+    "target_accepts": 10,
+    "generated": 13,
+    "accepted": 10,
     "queued_for_review": 1,
     "rejected": 2,
     "duplicates": 0,
     "errors": 0,
-    "api_call_count": 10,
+    "api_call_count": 13,
     "rate_limit_errors": 0,
     "correct_index_distribution_before": {
-      "0": 157,
-      "1": 154,
-      "2": 155,
-      "3": 167
-    },
-    "correct_index_distribution_generated": {
-      "0": 3,
-      "1": 0,
-      "2": 2,
-      "3": 0
-    },
-    "correct_index_distribution_after": {
       "0": 160,
       "1": 154,
       "2": 157,
       "3": 167
+    },
+    "correct_index_distribution_generated": {
+      "0": 3,
+      "1": 4,
+      "2": 2,
+      "3": 1
+    },
+    "correct_index_distribution_after": {
+      "0": 163,
+      "1": 158,
+      "2": 159,
+      "3": 168
     }
   }
 }
