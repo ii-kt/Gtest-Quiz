@@ -1,9 +1,9 @@
 {
   "schema_version": "gtest_quiz_coverage_report_v1",
-  "generated_at": "2026-08-28T11:15:19Z",
+  "generated_at": "2026-08-29T07:03:02Z",
   "bank_version": "gemini35_v1",
   "model": "gemini-3.5-flash",
-  "total_questions": 648,
+  "total_questions": 663,
   "target_complete_questions": 550,
   "target_expanded_questions": 1000,
   "expected_chapters": 55,
@@ -11,10 +11,10 @@
   "missing_chapters": [],
   "extra_chapters": [],
   "correct_index_distribution": {
-    "0": 163,
-    "1": 158,
-    "2": 159,
-    "3": 168
+    "0": 168,
+    "1": 163,
+    "2": 161,
+    "3": 171
   },
   "correct_index_window_issues": [],
   "active_review_warning_count": 0,
@@ -44,16 +44,16 @@
     {
       "chapter_group": "人工知能とは",
       "chapter_id": "2. 人工知能分野で議論される問題",
-      "question_count": 9,
+      "question_count": 10,
       "difficulty_distribution": {
         "basic": 2,
         "standard": 6,
-        "advanced": 1
+        "advanced": 2
       },
       "correct_index_distribution": {
         "0": 1,
         "1": 5,
-        "2": 1,
+        "2": 2,
         "3": 2
       },
       "legal_source_missing": 0,
@@ -62,14 +62,14 @@
     {
       "chapter_group": "人工知能をめぐる動向",
       "chapter_id": "3. 探索・推論",
-      "question_count": 12,
+      "question_count": 13,
       "difficulty_distribution": {
         "basic": 3,
-        "standard": 6,
+        "standard": 7,
         "advanced": 3
       },
       "correct_index_distribution": {
-        "0": 2,
+        "0": 3,
         "1": 5,
         "2": 3,
         "3": 2
@@ -188,17 +188,17 @@
     {
       "chapter_group": "機械学習の概要",
       "chapter_id": "10. モデルの選択・評価",
-      "question_count": 9,
+      "question_count": 10,
       "difficulty_distribution": {
         "basic": 2,
         "standard": 6,
-        "advanced": 1
+        "advanced": 2
       },
       "correct_index_distribution": {
         "0": 3,
         "1": 3,
         "2": 0,
-        "3": 3
+        "3": 4
       },
       "legal_source_missing": 0,
       "review_warning_count": 0
@@ -350,15 +350,15 @@
     {
       "chapter_group": "ディープラーニングの要素技術",
       "chapter_id": "19. 正規化層",
-      "question_count": 15,
+      "question_count": 16,
       "difficulty_distribution": {
         "basic": 4,
-        "standard": 7,
+        "standard": 8,
         "advanced": 4
       },
       "correct_index_distribution": {
         "0": 4,
-        "1": 1,
+        "1": 2,
         "2": 6,
         "3": 4
       },
@@ -386,14 +386,14 @@
     {
       "chapter_group": "ディープラーニングの要素技術",
       "chapter_id": "21. スキップ結合",
-      "question_count": 9,
+      "question_count": 10,
       "difficulty_distribution": {
         "basic": 2,
         "standard": 6,
-        "advanced": 1
+        "advanced": 2
       },
       "correct_index_distribution": {
-        "0": 1,
+        "0": 2,
         "1": 1,
         "2": 4,
         "3": 3
@@ -476,17 +476,17 @@
     {
       "chapter_group": "ディープラーニングの応用例",
       "chapter_id": "26. 画像認識",
-      "question_count": 9,
+      "question_count": 10,
       "difficulty_distribution": {
         "basic": 2,
         "standard": 6,
-        "advanced": 1
+        "advanced": 2
       },
       "correct_index_distribution": {
         "0": 2,
         "1": 2,
         "2": 3,
-        "3": 2
+        "3": 3
       },
       "legal_source_missing": 0,
       "review_warning_count": 0
@@ -512,15 +512,15 @@
     {
       "chapter_group": "ディープラーニングの応用例",
       "chapter_id": "28. 音声処理",
-      "question_count": 9,
+      "question_count": 10,
       "difficulty_distribution": {
         "basic": 2,
         "standard": 6,
-        "advanced": 1
+        "advanced": 2
       },
       "correct_index_distribution": {
         "0": 2,
-        "1": 2,
+        "1": 3,
         "2": 2,
         "3": 3
       },
@@ -584,15 +584,15 @@
     {
       "chapter_group": "ディープラーニングの応用例",
       "chapter_id": "32. マルチモーダル",
-      "question_count": 9,
+      "question_count": 10,
       "difficulty_distribution": {
         "basic": 2,
         "standard": 6,
-        "advanced": 1
+        "advanced": 2
       },
       "correct_index_distribution": {
         "0": 3,
-        "1": 1,
+        "1": 2,
         "2": 4,
         "3": 1
       },
@@ -638,15 +638,15 @@
     {
       "chapter_group": "AIの社会実装に向けて",
       "chapter_id": "35. AIプロジェクトの進め方",
-      "question_count": 9,
+      "question_count": 10,
       "difficulty_distribution": {
         "basic": 2,
         "standard": 6,
-        "advanced": 1
+        "advanced": 2
       },
       "correct_index_distribution": {
         "0": 3,
-        "1": 1,
+        "1": 2,
         "2": 3,
         "3": 2
       },
@@ -674,15 +674,15 @@
     {
       "chapter_group": "AIに必要な数理・統計知識",
       "chapter_id": "37. AIに必要な数理・統計知識",
-      "question_count": 9,
+      "question_count": 10,
       "difficulty_distribution": {
         "basic": 2,
         "standard": 6,
-        "advanced": 1
+        "advanced": 2
       },
       "correct_index_distribution": {
         "0": 3,
-        "1": 3,
+        "1": 4,
         "2": 1,
         "3": 2
       },
@@ -710,14 +710,14 @@
     {
       "chapter_group": "AIに関する法律と契約",
       "chapter_id": "2. 著作権法",
-      "question_count": 9,
+      "question_count": 10,
       "difficulty_distribution": {
         "basic": 2,
         "standard": 6,
-        "advanced": 1
+        "advanced": 2
       },
       "correct_index_distribution": {
-        "0": 3,
+        "0": 4,
         "1": 1,
         "2": 3,
         "3": 2
@@ -746,17 +746,17 @@
     {
       "chapter_group": "AIに関する法律と契約",
       "chapter_id": "4. 不正競争防止法",
-      "question_count": 12,
+      "question_count": 13,
       "difficulty_distribution": {
         "basic": 3,
-        "standard": 6,
+        "standard": 7,
         "advanced": 3
       },
       "correct_index_distribution": {
         "0": 3,
         "1": 4,
         "2": 4,
-        "3": 1
+        "3": 2
       },
       "legal_source_missing": 0,
       "review_warning_count": 0
@@ -764,16 +764,16 @@
     {
       "chapter_group": "AIに関する法律と契約",
       "chapter_id": "5. 独占禁止法",
-      "question_count": 12,
+      "question_count": 13,
       "difficulty_distribution": {
         "basic": 3,
-        "standard": 6,
+        "standard": 7,
         "advanced": 3
       },
       "correct_index_distribution": {
         "0": 1,
         "1": 2,
-        "2": 6,
+        "2": 7,
         "3": 3
       },
       "legal_source_missing": 0,
@@ -890,14 +890,14 @@
     {
       "chapter_group": "AI倫理・AIガバナンス",
       "chapter_id": "12. 悪用",
-      "question_count": 11,
+      "question_count": 12,
       "difficulty_distribution": {
         "basic": 3,
         "standard": 6,
-        "advanced": 2
+        "advanced": 3
       },
       "correct_index_distribution": {
-        "0": 5,
+        "0": 6,
         "1": 2,
         "2": 1,
         "3": 3
@@ -962,14 +962,14 @@
     {
       "chapter_group": "AI倫理・AIガバナンス",
       "chapter_id": "16. 労働政策",
-      "question_count": 9,
+      "question_count": 10,
       "difficulty_distribution": {
         "basic": 2,
         "standard": 6,
-        "advanced": 1
+        "advanced": 2
       },
       "correct_index_distribution": {
-        "0": 1,
+        "0": 2,
         "1": 1,
         "2": 3,
         "3": 4
@@ -1044,7 +1044,7 @@
       "min_questions": 550,
       "min_chapters": 55,
       "min_per_chapter": 10,
-      "chapters_meeting_floor": 20,
+      "chapters_meeting_floor": 30,
       "difficulty_balance_failures": []
     },
     "expanded": {
@@ -1056,20 +1056,20 @@
       "difficulty_balance_failures": []
     }
   },
-  "review_queue_total": 385,
+  "review_queue_total": 390,
   "review_queue_by_decision": {
     "error": 38,
-    "reject": 322,
+    "reject": 327,
     "review": 25
   },
   "reject_reason_top": [
     {
       "reason": "explanation should distinguish incorrect choices",
-      "count": 302
+      "count": 307
     },
     {
       "reason": "explanation does not distinguish distractors",
-      "count": 248
+      "count": 253
     },
     {
       "reason": "explanation should include the reason for the correct answer",
@@ -1081,7 +1081,7 @@
     },
     {
       "reason": "concept tags are missing",
-      "count": 44
+      "count": 45
     },
     {
       "reason": "503 UNAVAILABLE. {'error': {'code': 503, 'message': 'This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.', 'status': 'UNAVAILABLE'}}",
