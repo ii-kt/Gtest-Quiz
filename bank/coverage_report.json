@@ -1,9 +1,9 @@
 {
   "schema_version": "gtest_quiz_coverage_report_v1",
-  "generated_at": "2026-08-30T05:28:27Z",
+  "generated_at": "2026-08-31T05:20:53Z",
   "bank_version": "gemini35_v1",
   "model": "gemini-3.5-flash",
-  "total_questions": 669,
+  "total_questions": 674,
   "target_complete_questions": 550,
   "target_expanded_questions": 1000,
   "expected_chapters": 55,
@@ -11,10 +11,10 @@
   "missing_chapters": [],
   "extra_chapters": [],
   "correct_index_distribution": {
-    "0": 170,
+    "0": 172,
     "1": 166,
     "2": 162,
-    "3": 171
+    "3": 174
   },
   "correct_index_window_issues": [],
   "active_review_warning_count": 0,
@@ -188,9 +188,9 @@
     {
       "chapter_group": "機械学習の概要",
       "chapter_id": "10. モデルの選択・評価",
-      "question_count": 10,
+      "question_count": 11,
       "difficulty_distribution": {
-        "basic": 2,
+        "basic": 3,
         "standard": 6,
         "advanced": 2
       },
@@ -198,7 +198,7 @@
         "0": 3,
         "1": 3,
         "2": 0,
-        "3": 4
+        "3": 5
       },
       "legal_source_missing": 0,
       "review_warning_count": 0
@@ -512,9 +512,9 @@
     {
       "chapter_group": "ディープラーニングの応用例",
       "chapter_id": "28. 音声処理",
-      "question_count": 10,
+      "question_count": 11,
       "difficulty_distribution": {
-        "basic": 2,
+        "basic": 3,
         "standard": 6,
         "advanced": 2
       },
@@ -522,7 +522,7 @@
         "0": 2,
         "1": 3,
         "2": 2,
-        "3": 3
+        "3": 4
       },
       "legal_source_missing": 0,
       "review_warning_count": 0
@@ -584,14 +584,14 @@
     {
       "chapter_group": "ディープラーニングの応用例",
       "chapter_id": "32. マルチモーダル",
-      "question_count": 10,
+      "question_count": 11,
       "difficulty_distribution": {
-        "basic": 2,
+        "basic": 3,
         "standard": 6,
         "advanced": 2
       },
       "correct_index_distribution": {
-        "0": 3,
+        "0": 4,
         "1": 2,
         "2": 4,
         "3": 1
@@ -674,17 +674,17 @@
     {
       "chapter_group": "AIに必要な数理・統計知識",
       "chapter_id": "37. AIに必要な数理・統計知識",
-      "question_count": 11,
+      "question_count": 12,
       "difficulty_distribution": {
         "basic": 3,
         "standard": 6,
-        "advanced": 2
+        "advanced": 3
       },
       "correct_index_distribution": {
         "0": 3,
         "1": 4,
         "2": 2,
-        "3": 2
+        "3": 3
       },
       "legal_source_missing": 0,
       "review_warning_count": 0
@@ -962,14 +962,14 @@
     {
       "chapter_group": "AI倫理・AIガバナンス",
       "chapter_id": "16. 労働政策",
-      "question_count": 11,
+      "question_count": 12,
       "difficulty_distribution": {
         "basic": 3,
         "standard": 6,
-        "advanced": 2
+        "advanced": 3
       },
       "correct_index_distribution": {
-        "0": 2,
+        "0": 3,
         "1": 2,
         "2": 3,
         "3": 4
@@ -1056,24 +1056,24 @@
       "difficulty_balance_failures": []
     }
   },
-  "review_queue_total": 392,
+  "review_queue_total": 395,
   "review_queue_by_decision": {
     "error": 38,
-    "reject": 329,
+    "reject": 332,
     "review": 25
   },
   "reject_reason_top": [
     {
       "reason": "explanation should distinguish incorrect choices",
-      "count": 309
+      "count": 312
     },
     {
       "reason": "explanation does not distinguish distractors",
-      "count": 255
+      "count": 258
     },
     {
       "reason": "explanation should include the reason for the correct answer",
-      "count": 141
+      "count": 144
     },
     {
       "reason": "explanation does not clearly state why the answer is correct",
