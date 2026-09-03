@@ -1,9 +1,9 @@
 {
   "schema_version": "gtest_quiz_coverage_report_v1",
-  "generated_at": "2026-09-02T04:17:22Z",
+  "generated_at": "2026-09-03T04:11:56Z",
   "bank_version": "gemini35_v1",
   "model": "gemini-3.5-flash",
-  "total_questions": 689,
+  "total_questions": 694,
   "target_complete_questions": 550,
   "target_expanded_questions": 1000,
   "expected_chapters": 55,
@@ -11,9 +11,9 @@
   "missing_chapters": [],
   "extra_chapters": [],
   "correct_index_distribution": {
-    "0": 177,
+    "0": 178,
     "1": 170,
-    "2": 164,
+    "2": 168,
     "3": 178
   },
   "correct_index_window_issues": [],
@@ -44,16 +44,16 @@
     {
       "chapter_group": "人工知能とは",
       "chapter_id": "2. 人工知能分野で議論される問題",
-      "question_count": 12,
+      "question_count": 13,
       "difficulty_distribution": {
         "basic": 3,
-        "standard": 6,
+        "standard": 7,
         "advanced": 3
       },
       "correct_index_distribution": {
         "0": 2,
         "1": 6,
-        "2": 2,
+        "2": 3,
         "3": 2
       },
       "legal_source_missing": 0,
@@ -638,14 +638,14 @@
     {
       "chapter_group": "AIの社会実装に向けて",
       "chapter_id": "35. AIプロジェクトの進め方",
-      "question_count": 12,
+      "question_count": 13,
       "difficulty_distribution": {
         "basic": 3,
-        "standard": 6,
+        "standard": 7,
         "advanced": 3
       },
       "correct_index_distribution": {
-        "0": 3,
+        "0": 4,
         "1": 3,
         "2": 4,
         "3": 2
@@ -674,16 +674,16 @@
     {
       "chapter_group": "AIに必要な数理・統計知識",
       "chapter_id": "37. AIに必要な数理・統計知識",
-      "question_count": 12,
+      "question_count": 13,
       "difficulty_distribution": {
         "basic": 3,
-        "standard": 6,
+        "standard": 7,
         "advanced": 3
       },
       "correct_index_distribution": {
         "0": 3,
         "1": 4,
-        "2": 2,
+        "2": 3,
         "3": 3
       },
       "legal_source_missing": 0,
@@ -746,16 +746,16 @@
     {
       "chapter_group": "AIに関する法律と契約",
       "chapter_id": "4. 不正競争防止法",
-      "question_count": 13,
+      "question_count": 14,
       "difficulty_distribution": {
-        "basic": 3,
+        "basic": 4,
         "standard": 7,
         "advanced": 3
       },
       "correct_index_distribution": {
         "0": 3,
         "1": 4,
-        "2": 4,
+        "2": 5,
         "3": 2
       },
       "legal_source_missing": 0,
@@ -764,16 +764,16 @@
     {
       "chapter_group": "AIに関する法律と契約",
       "chapter_id": "5. 独占禁止法",
-      "question_count": 13,
+      "question_count": 14,
       "difficulty_distribution": {
-        "basic": 3,
+        "basic": 4,
         "standard": 7,
         "advanced": 3
       },
       "correct_index_distribution": {
         "0": 1,
         "1": 2,
-        "2": 7,
+        "2": 8,
         "3": 3
       },
       "legal_source_missing": 0,
@@ -1056,28 +1056,28 @@
       "difficulty_balance_failures": []
     }
   },
-  "review_queue_total": 401,
+  "review_queue_total": 408,
   "review_queue_by_decision": {
     "error": 38,
-    "reject": 337,
+    "reject": 344,
     "review": 26
   },
   "reject_reason_top": [
     {
       "reason": "explanation should distinguish incorrect choices",
-      "count": 317
+      "count": 324
     },
     {
       "reason": "explanation does not distinguish distractors",
-      "count": 263
+      "count": 269
     },
     {
       "reason": "explanation should include the reason for the correct answer",
-      "count": 145
+      "count": 150
     },
     {
       "reason": "explanation does not clearly state why the answer is correct",
-      "count": 54
+      "count": 57
     },
     {
       "reason": "concept tags are missing",
