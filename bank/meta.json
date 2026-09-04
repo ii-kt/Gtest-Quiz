@@ -1,7 +1,7 @@
 {
   "version": 1,
   "created_at": "1970-01-01T00:00:00Z",
-  "updated_at": "2026-09-03T04:11:37Z",
+  "updated_at": "2026-09-04T04:18:41Z",
   "usage": {
     "total_questions": 0,
     "online_questions": 0,
@@ -14,7 +14,7 @@
     "last_error": null
   },
   "chapter_stats": {},
-  "last_chapter_id": "4. 不正競争防止法",
+  "last_chapter_id": "21. スキップ結合",
   "chapters": {
     "01_人工知能とは": {
       "label": "人工知能とは",
@@ -301,30 +301,30 @@
   "question_bank": {
     "path": "bank/question_bank.jsonl",
     "bank_version": "gemini35_v1",
-    "total_questions": 694,
-    "updated_at": "2026-09-03T04:11:37Z"
+    "total_questions": 699,
+    "updated_at": "2026-09-04T04:18:41Z"
   },
   "content_factory": {
-    "last_refill_at": "2026-09-03T04:11:37Z",
+    "last_refill_at": "2026-09-04T04:18:41Z",
     "model": "gemini-3.5-flash",
     "bank_version": "gemini35_v1",
     "mode": "daily",
     "prompt_version": "gtest_factory_gemini35_v1_2026-05-26",
     "target_accepts": 5,
-    "generated": 12,
+    "generated": 7,
     "accepted": 5,
     "queued_for_review": 0,
-    "rejected": 7,
+    "rejected": 2,
     "duplicates": 0,
     "errors": 3,
     "targets": 55,
-    "api_call_count": 22,
-    "rate_limit_errors": 10,
+    "api_call_count": 16,
+    "rate_limit_errors": 9,
     "correct_index_distribution_generated": {
-      "0": 1,
+      "0": 2,
       "1": 0,
-      "2": 4,
-      "3": 0
+      "2": 0,
+      "3": 3
     }
   },
   "normalization": {
@@ -345,36 +345,36 @@
     ]
   },
   "last_refill_result": {
-    "recorded_at": "2026-09-03T04:11:37Z",
+    "recorded_at": "2026-09-04T04:18:41Z",
     "model": "gemini-3.5-flash",
     "bank_version": "gemini35_v1",
     "mode": "daily",
     "target_accepts": 5,
-    "generated": 12,
+    "generated": 7,
     "accepted": 5,
     "queued_for_review": 0,
-    "rejected": 7,
+    "rejected": 2,
     "duplicates": 0,
     "errors": 3,
-    "api_call_count": 22,
-    "rate_limit_errors": 10,
+    "api_call_count": 16,
+    "rate_limit_errors": 9,
     "correct_index_distribution_before": {
-      "0": 177,
-      "1": 170,
-      "2": 164,
-      "3": 178
-    },
-    "correct_index_distribution_generated": {
-      "0": 1,
-      "1": 0,
-      "2": 4,
-      "3": 0
-    },
-    "correct_index_distribution_after": {
       "0": 178,
       "1": 170,
       "2": 168,
       "3": 178
+    },
+    "correct_index_distribution_generated": {
+      "0": 2,
+      "1": 0,
+      "2": 0,
+      "3": 3
+    },
+    "correct_index_distribution_after": {
+      "0": 180,
+      "1": 170,
+      "2": 168,
+      "3": 181
     }
   }
 }

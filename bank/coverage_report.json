@@ -1,9 +1,9 @@
 {
   "schema_version": "gtest_quiz_coverage_report_v1",
-  "generated_at": "2026-09-03T04:11:56Z",
+  "generated_at": "2026-09-04T04:18:54Z",
   "bank_version": "gemini35_v1",
   "model": "gemini-3.5-flash",
-  "total_questions": 694,
+  "total_questions": 699,
   "target_complete_questions": 550,
   "target_expanded_questions": 1000,
   "expected_chapters": 55,
@@ -11,10 +11,10 @@
   "missing_chapters": [],
   "extra_chapters": [],
   "correct_index_distribution": {
-    "0": 178,
+    "0": 180,
     "1": 170,
     "2": 168,
-    "3": 178
+    "3": 181
   },
   "correct_index_window_issues": [],
   "active_review_warning_count": 0,
@@ -62,9 +62,9 @@
     {
       "chapter_group": "人工知能をめぐる動向",
       "chapter_id": "3. 探索・推論",
-      "question_count": 13,
+      "question_count": 14,
       "difficulty_distribution": {
-        "basic": 3,
+        "basic": 4,
         "standard": 7,
         "advanced": 3
       },
@@ -72,7 +72,7 @@
         "0": 3,
         "1": 5,
         "2": 3,
-        "3": 2
+        "3": 3
       },
       "legal_source_missing": 0,
       "review_warning_count": 0
@@ -386,9 +386,9 @@
     {
       "chapter_group": "ディープラーニングの要素技術",
       "chapter_id": "21. スキップ結合",
-      "question_count": 13,
+      "question_count": 14,
       "difficulty_distribution": {
-        "basic": 3,
+        "basic": 4,
         "standard": 7,
         "advanced": 3
       },
@@ -396,7 +396,7 @@
         "0": 3,
         "1": 3,
         "2": 4,
-        "3": 3
+        "3": 4
       },
       "legal_source_missing": 0,
       "review_warning_count": 0
@@ -476,17 +476,17 @@
     {
       "chapter_group": "ディープラーニングの応用例",
       "chapter_id": "26. 画像認識",
-      "question_count": 12,
+      "question_count": 13,
       "difficulty_distribution": {
         "basic": 3,
-        "standard": 6,
+        "standard": 7,
         "advanced": 3
       },
       "correct_index_distribution": {
         "0": 3,
         "1": 2,
         "2": 3,
-        "3": 4
+        "3": 5
       },
       "legal_source_missing": 0,
       "review_warning_count": 0
@@ -512,14 +512,14 @@
     {
       "chapter_group": "ディープラーニングの応用例",
       "chapter_id": "28. 音声処理",
-      "question_count": 12,
+      "question_count": 13,
       "difficulty_distribution": {
         "basic": 3,
-        "standard": 6,
+        "standard": 7,
         "advanced": 3
       },
       "correct_index_distribution": {
-        "0": 2,
+        "0": 3,
         "1": 3,
         "2": 2,
         "3": 5
@@ -584,14 +584,14 @@
     {
       "chapter_group": "ディープラーニングの応用例",
       "chapter_id": "32. マルチモーダル",
-      "question_count": 13,
+      "question_count": 14,
       "difficulty_distribution": {
-        "basic": 3,
+        "basic": 4,
         "standard": 7,
         "advanced": 3
       },
       "correct_index_distribution": {
-        "0": 4,
+        "0": 5,
         "1": 2,
         "2": 5,
         "3": 2
@@ -1056,24 +1056,24 @@
       "difficulty_balance_failures": []
     }
   },
-  "review_queue_total": 408,
+  "review_queue_total": 410,
   "review_queue_by_decision": {
     "error": 38,
-    "reject": 344,
+    "reject": 346,
     "review": 26
   },
   "reject_reason_top": [
     {
       "reason": "explanation should distinguish incorrect choices",
-      "count": 324
+      "count": 326
     },
     {
       "reason": "explanation does not distinguish distractors",
-      "count": 269
+      "count": 271
     },
     {
       "reason": "explanation should include the reason for the correct answer",
-      "count": 150
+      "count": 151
     },
     {
       "reason": "explanation does not clearly state why the answer is correct",
