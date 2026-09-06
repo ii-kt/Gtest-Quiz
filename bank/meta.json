@@ -1,7 +1,7 @@
 {
   "version": 1,
   "created_at": "1970-01-01T00:00:00Z",
-  "updated_at": "2026-09-05T04:32:07Z",
+  "updated_at": "2026-09-06T04:27:31Z",
   "usage": {
     "total_questions": 0,
     "online_questions": 0,
@@ -301,30 +301,30 @@
   "question_bank": {
     "path": "bank/question_bank.jsonl",
     "bank_version": "gemini35_v1",
-    "total_questions": 703,
-    "updated_at": "2026-09-05T04:32:07Z"
+    "total_questions": 708,
+    "updated_at": "2026-09-06T04:27:31Z"
   },
   "content_factory": {
-    "last_refill_at": "2026-09-05T04:32:07Z",
+    "last_refill_at": "2026-09-06T04:27:31Z",
     "model": "gemini-3.5-flash",
     "bank_version": "gemini35_v1",
     "mode": "daily",
     "prompt_version": "gtest_factory_gemini35_v1_2026-05-26",
     "target_accepts": 5,
-    "generated": 8,
-    "accepted": 4,
+    "generated": 9,
+    "accepted": 5,
     "queued_for_review": 0,
     "rejected": 4,
     "duplicates": 0,
-    "errors": 157,
+    "errors": 0,
     "targets": 55,
-    "api_call_count": 485,
-    "rate_limit_errors": 464,
+    "api_call_count": 12,
+    "rate_limit_errors": 0,
     "correct_index_distribution_generated": {
       "0": 1,
-      "1": 0,
-      "2": 3,
-      "3": 0
+      "1": 1,
+      "2": 2,
+      "3": 1
     }
   },
   "normalization": {
@@ -345,36 +345,36 @@
     ]
   },
   "last_refill_result": {
-    "recorded_at": "2026-09-05T04:32:07Z",
+    "recorded_at": "2026-09-06T04:27:31Z",
     "model": "gemini-3.5-flash",
     "bank_version": "gemini35_v1",
     "mode": "daily",
     "target_accepts": 5,
-    "generated": 8,
-    "accepted": 4,
+    "generated": 9,
+    "accepted": 5,
     "queued_for_review": 0,
     "rejected": 4,
     "duplicates": 0,
-    "errors": 157,
-    "api_call_count": 485,
-    "rate_limit_errors": 464,
+    "errors": 0,
+    "api_call_count": 12,
+    "rate_limit_errors": 0,
     "correct_index_distribution_before": {
-      "0": 180,
-      "1": 170,
-      "2": 168,
-      "3": 181
-    },
-    "correct_index_distribution_generated": {
-      "0": 1,
-      "1": 0,
-      "2": 3,
-      "3": 0
-    },
-    "correct_index_distribution_after": {
       "0": 181,
       "1": 170,
       "2": 171,
       "3": 181
+    },
+    "correct_index_distribution_generated": {
+      "0": 1,
+      "1": 1,
+      "2": 2,
+      "3": 1
+    },
+    "correct_index_distribution_after": {
+      "0": 182,
+      "1": 171,
+      "2": 173,
+      "3": 182
     }
   }
 }

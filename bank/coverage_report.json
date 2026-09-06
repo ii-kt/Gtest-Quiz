@@ -1,9 +1,9 @@
 {
   "schema_version": "gtest_quiz_coverage_report_v1",
-  "generated_at": "2026-09-05T04:32:26Z",
+  "generated_at": "2026-09-06T04:27:47Z",
   "bank_version": "gemini35_v1",
   "model": "gemini-3.5-flash",
-  "total_questions": 703,
+  "total_questions": 708,
   "target_complete_questions": 550,
   "target_expanded_questions": 1000,
   "expected_chapters": 55,
@@ -11,10 +11,10 @@
   "missing_chapters": [],
   "extra_chapters": [],
   "correct_index_distribution": {
-    "0": 181,
-    "1": 170,
-    "2": 171,
-    "3": 181
+    "0": 182,
+    "1": 171,
+    "2": 173,
+    "3": 182
   },
   "correct_index_window_issues": [],
   "active_review_warning_count": 0,
@@ -638,14 +638,14 @@
     {
       "chapter_group": "AIの社会実装に向けて",
       "chapter_id": "35. AIプロジェクトの進め方",
-      "question_count": 13,
+      "question_count": 14,
       "difficulty_distribution": {
-        "basic": 3,
+        "basic": 4,
         "standard": 7,
         "advanced": 3
       },
       "correct_index_distribution": {
-        "0": 4,
+        "0": 5,
         "1": 3,
         "2": 4,
         "3": 2
@@ -674,15 +674,15 @@
     {
       "chapter_group": "AIに必要な数理・統計知識",
       "chapter_id": "37. AIに必要な数理・統計知識",
-      "question_count": 14,
+      "question_count": 15,
       "difficulty_distribution": {
         "basic": 4,
         "standard": 7,
-        "advanced": 3
+        "advanced": 4
       },
       "correct_index_distribution": {
         "0": 3,
-        "1": 4,
+        "1": 5,
         "2": 4,
         "3": 3
       },
@@ -710,16 +710,16 @@
     {
       "chapter_group": "AIに関する法律と契約",
       "chapter_id": "2. 著作権法",
-      "question_count": 13,
+      "question_count": 14,
       "difficulty_distribution": {
-        "basic": 3,
+        "basic": 4,
         "standard": 7,
         "advanced": 3
       },
       "correct_index_distribution": {
         "0": 6,
         "1": 2,
-        "2": 3,
+        "2": 4,
         "3": 2
       },
       "legal_source_missing": 0,
@@ -890,9 +890,9 @@
     {
       "chapter_group": "AI倫理・AIガバナンス",
       "chapter_id": "12. 悪用",
-      "question_count": 13,
+      "question_count": 14,
       "difficulty_distribution": {
-        "basic": 3,
+        "basic": 4,
         "standard": 7,
         "advanced": 3
       },
@@ -900,7 +900,7 @@
         "0": 6,
         "1": 3,
         "2": 1,
-        "3": 3
+        "3": 4
       },
       "legal_source_missing": 0,
       "review_warning_count": 0
@@ -962,16 +962,16 @@
     {
       "chapter_group": "AI倫理・AIガバナンス",
       "chapter_id": "16. 労働政策",
-      "question_count": 13,
+      "question_count": 14,
       "difficulty_distribution": {
-        "basic": 3,
+        "basic": 4,
         "standard": 7,
         "advanced": 3
       },
       "correct_index_distribution": {
         "0": 3,
         "1": 2,
-        "2": 3,
+        "2": 4,
         "3": 5
       },
       "legal_source_missing": 0,
@@ -1052,36 +1052,36 @@
       "min_questions": 1000,
       "min_chapters": 55,
       "min_per_chapter": 15,
-      "chapters_meeting_floor": 16,
+      "chapters_meeting_floor": 17,
       "difficulty_balance_failures": []
     }
   },
-  "review_queue_total": 416,
+  "review_queue_total": 420,
   "review_queue_by_decision": {
     "error": 40,
-    "reject": 350,
+    "reject": 354,
     "review": 26
   },
   "reject_reason_top": [
     {
       "reason": "explanation should distinguish incorrect choices",
-      "count": 330
+      "count": 334
     },
     {
       "reason": "explanation does not distinguish distractors",
-      "count": 273
+      "count": 274
     },
     {
       "reason": "explanation should include the reason for the correct answer",
-      "count": 153
+      "count": 156
     },
     {
       "reason": "explanation does not clearly state why the answer is correct",
-      "count": 58
+      "count": 60
     },
     {
       "reason": "concept tags are missing",
-      "count": 46
+      "count": 47
     },
     {
       "reason": "503 UNAVAILABLE. {'error': {'code': 503, 'message': 'This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.', 'status': 'UNAVAILABLE'}}",
@@ -1089,7 +1089,7 @@
     },
     {
       "reason": "legal or guideline question is missing official source metadata: source_url, source_title, source_version, source_checked_at, legal_basis",
-      "count": 37
+      "count": 38
     },
     {
       "reason": "legal or guideline question is missing official source metadata: legal_basis",
